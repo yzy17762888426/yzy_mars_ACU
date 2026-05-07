@@ -1,95 +1,97 @@
 #include "get_maf.h"
-#include "stdio.h"
-#include "stm32f1xx_it.h"
+#include "main.h"
 #include "display_comm.h"
 #include "display_show.h"
-#include "main.h"
+#include "stm32f1xx_it.h"
+#include "stdio.h"
+
+extern ADC_HandleTypeDef hadc1;
+extern DMA_HandleTypeDef hdma_adc1;
 
 static uint16_t freq_show = 0;
-
-static uint8_t a_progress = 0;
-
-static uint8_t b_progress = 0;
+static uint8_t  a_progress = 0;
+static uint8_t  b_progress = 0;
 
 extern DataPacket_Struct Show_DataPacketType;
 
-uint16_t Get_Mv_Maf(void)
+// MAF 毫伏输入 → 显示值(uint64 防溢出)
+static uint16_t Get_Mv_Maf(void)
 {
-	return Show_DataPacketType.MAF_ADJ * 3300 * ADvalue[CH_MAF_MV] / 40950000;
+    return (uint16_t)((uint64_t)Show_DataPacketType.MAF_ADJ * 3300U * ADvalue[CH_MAF_MV] / 40950000U);
 }
 
-void Cal_A_PumpProgress(void)
+// 泵进度:线性映射 [start, full] → [0, 100]
+static uint8_t Cal_PumpProgress(uint16_t freq, uint16_t start, uint16_t full)
 {
-	if (Show_DataPacketType.PUMP1_EN)
-	{
-		if (freq_show > Show_DataPacketType.START1)
-		{
-			if (freq_show < Show_DataPacketType.FULL1)
-			{
-				a_progress = (freq_show - Show_DataPacketType.START1) * 100 / (Show_DataPacketType.FULL1 - Show_DataPacketType.START1);
-			}
-			else
-			{
-				a_progress = 100;
-			}
-		}
-		else
-		{
-			a_progress = 0;
-		}
-	}
-	else
-		a_progress = 0;
-}
-
-void Cal_B_PumpProgress(void)
-{
-	if (Show_DataPacketType.PUMP2_EN)
-	{
-		if (freq_show > Show_DataPacketType.START2)
-		{
-			if (freq_show < Show_DataPacketType.FULL2)
-			{
-				b_progress = (freq_show - Show_DataPacketType.START2) * 100 / (Show_DataPacketType.FULL2 - Show_DataPacketType.START2);
-			}
-			else
-			{
-				b_progress = 100;
-			}
-		}
-		else
-		{
-			b_progress = 0;
-		}
-	}
-	else
-		b_progress = 0;
+    if (freq <= start) return 0;
+    if (freq >= full)  return 100;
+    return (uint8_t)((freq - start) * 100 / (full - start));
 }
 
 void GetFreqHz_Task(void)
 {
-	static uint32_t starttime = 0;
-	if (GetMode() == NORMAL_MODE)
-	{
-		if(Show_DataPacketType.Hz_Mv == HZ_MODE)
-			freq_show = Get_FreqHz(); //
-		else
-			freq_show = Get_Mv_Maf(); //
-	}
-	else if (GetMode() == TEST_MODE)
-	{
-		freq_show = GetTestData(); //
-	}
-	Cal_A_PumpProgress();
-	Cal_B_PumpProgress();
-	printf("mafValueShow.txt=\"%d\"\xff\xff\xff", freq_show);
+    if (GetMode() == NORMAL_MODE)
+        freq_show = (Show_DataPacketType.Hz_Mv == HZ_MODE) ? Get_FreqHz() : Get_Mv_Maf();
+    else if (GetMode() == TEST_MODE)
+        freq_show = GetTestData();
+
+    a_progress = Show_DataPacketType.PUMP1_EN ?
+        Cal_PumpProgress(freq_show, Show_DataPacketType.START1, Show_DataPacketType.FULL1) : 0;
+    b_progress = Show_DataPacketType.PUMP2_EN ?
+        Cal_PumpProgress(freq_show, Show_DataPacketType.START2, Show_DataPacketType.FULL2) : 0;
+
+    printf("mafValueShow.txt=\"%d\"\xff\xff\xff", freq_show);
 }
 
 uint8_t Get_A_PumpProgress(void)
 {
-	return a_progress;
+    return a_progress;
 }
+
 uint8_t Get_B_PumpProgress(void)
 {
-	return b_progress;
+    return b_progress;
+}
+
+/*------------------------------------------------------------------------------
+ * ADC1 — 10 通道扫描 + 连续转换 + DMA 循环
+ *----------------------------------------------------------------------------*/
+static const struct { uint32_t channel; uint8_t rank; } adc_map[] = {
+    {ADC_CHANNEL_10, CH_LIGHT_SENS + 1},  // PC0 光敏电阻
+    {ADC_CHANNEL_11, CH_PUMP1_CUR  + 1},  // PC1 PUMP1 电流
+    {ADC_CHANNEL_12, CH_BAT_VOLT   + 1},  // PC2 电瓶电压
+    {ADC_CHANNEL_13, CH_PUMP2_CUR  + 1},  // PC3 PUMP2 电流
+    {ADC_CHANNEL_14, CH_RESERVE_C4 + 1},  // PC4 预留
+    {ADC_CHANNEL_6,  CH_LIQUID_LVL + 1},  // PA6 液位
+    {ADC_CHANNEL_7,  CH_RESERVE_A7 + 1},  // PA7 预留
+    {ADC_CHANNEL_8,  CH_RESERVE_B0 + 1},  // PB0 预留
+    {ADC_CHANNEL_9,  CH_MAF_MV     + 1},  // PB1 MAF 毫伏
+    {ADC_CHANNEL_0,  CH_RESERVE_A0 + 1},  // PA0 预留
+};
+
+void MX_ADC1_Init(void)
+{
+    hadc1.Instance = ADC1;
+    hadc1.Init.ScanConvMode = ADC_SCAN_ENABLE;
+    hadc1.Init.ContinuousConvMode = ENABLE;
+    hadc1.Init.DiscontinuousConvMode = DISABLE;
+    hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
+    hadc1.Init.NbrOfConversion = ADC_CH_COUNT;
+    if (HAL_ADC_Init(&hadc1) != HAL_OK)
+        Error_Handler();
+
+    HAL_ADCEx_Calibration_Start(&hadc1);
+
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
+
+    for (int i = 0; i < ADC_CH_COUNT; i++)
+    {
+        sConfig.Channel = adc_map[i].channel;
+        sConfig.Rank    = adc_map[i].rank;
+        HAL_ADC_ConfigChannel(&hadc1, &sConfig);
+    }
+
+    HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADvalue, ADC_CH_COUNT);
 }

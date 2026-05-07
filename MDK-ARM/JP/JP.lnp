@@ -8,6 +8,7 @@
 "jp\display_show.o"
 "jp\pump.o"
 "jp\flash.o"
+"jp\flex.o"
 "jp\stm32f1xx_hal_gpio_ex.o"
 "jp\stm32f1xx_hal_adc.o"
 "jp\stm32f1xx_hal_adc_ex.o"
@@ -24,6 +25,8 @@
 "jp\stm32f1xx_hal_flash.o"
 "jp\stm32f1xx_hal_flash_ex.o"
 "jp\stm32f1xx_hal_exti.o"
+"jp\stm32f1xx_hal_dac.o"
+"jp\stm32f1xx_hal_dac_ex.o"
 "jp\system_stm32f1xx.o"
 --library_type=microlib --strict --scatter "JP\JP.sct"
 --summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols

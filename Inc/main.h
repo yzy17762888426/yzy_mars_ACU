@@ -30,7 +30,8 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 
-#define SW_VERSION     66
+#define SW_VERSION        66
+#define UART_RX_BUF_SIZE  50
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -88,10 +89,6 @@ extern uint16_t ADvalue[ADC_CH_COUNT];
 #define AD_RESERVE_B0 ADvalue[CH_RESERVE_B0]
 #define AD_MAF_MV     ADvalue[CH_MAF_MV]
 #define AD_RESERVE_A0 ADvalue[CH_RESERVE_A0]
-
-uint8_t Get_PA1_Duty(void);
-uint16_t Get_PA1_Freq(void);
-void PA1_Sample(void);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -1,43 +1,33 @@
 #include "display_comm.h"
-#include "string.h"
-#include "stdio.h"
-#include "get_maf.h"
+#include "main.h"
+
+extern UART_HandleTypeDef huart2;
 
 // 传输层协议标志
-#define FRAMECTRL 0xA5
-#define FRAMEHEAD 0xAA
-#define FRAMETAIL 0x55
+#define FRAMEHEAD       0xAA
+#define FRAMETAIL       0x55
 
-TransportFrame_Struct TransportFrame_Type;
+#define COMM_BUF_SIZE   50
+#define DMA_RX_SIZE     50  // 必须与 main.h 里 UART_RX_BUF_SIZE 一致
+
 DataPacket_Struct DataPacket_Type;
 
+static TransportFrame_Struct TransportFrame_Type;
 static uint16_t display_cmd = 0;
-uint8_t comm_buffer[50]; // 接收缓冲区
+static uint8_t  comm_buffer[COMM_BUF_SIZE];
+static uint8_t  recv_offset = 0;
 
 extern DMA_HandleTypeDef hdma_uart1;
-extern uint8_t Rxbuffer[30];
+extern uint8_t Rxbuffer[];
 
-typedef struct
+static inline uint16_t buf_u16_le(const uint8_t *buf, uint8_t idx)
 {
-    int *buffer;
-    int head;
-    int tail;
-    int size;
-    int offset;
-} CircularBuffer;
-CircularBuffer CommRxBuffer;
-
-void initBuffer(CircularBuffer *cb, int *addr, int size)
-{
-    cb->buffer = addr;
-    cb->size = size;
-    cb->head = 0;
-    cb->tail = 0;
+    return ((uint16_t)buf[idx + 1] << 8) | buf[idx];
 }
 
 void InitCommBuffer(void)
 {
-    initBuffer(&CommRxBuffer, (int *)&comm_buffer, sizeof(comm_buffer));
+    recv_offset = 0;
 }
 
 uint16_t GetDisplay_Cmd(void)
@@ -45,8 +35,8 @@ uint16_t GetDisplay_Cmd(void)
     return display_cmd;
 }
 
-// Modbus CRC16计算函数
-uint16_t Modbus_crc16(uint8_t *data, uint16_t length)
+// Modbus CRC16
+static uint16_t Modbus_crc16(const uint8_t *data, uint16_t length)
 {
     uint16_t crc = 0xFFFF;
     for (uint16_t i = 0; i < length; i++)
@@ -69,15 +59,12 @@ uint16_t Modbus_crc16(uint8_t *data, uint16_t length)
 }
 
 /**
- * @brief  传输层解包函数
- * @param  pframe : 数据帧对象
- * @param  buffer : 解包结果存储缓冲区
- * @param  size   : 解包缓冲区尺寸
- * @param  data   : 接收的数据，单 byte
- * @retval 是否成功解包
+ * @brief 传输层逐字节解包
+ * @retval true=解出一帧合法数据,false=未完成或错误
  */
-bool TransportUnpacking(TransportFrame_Struct *pframe, uint8_t *buffer, uint16_t size, uint8_t data)
+static bool TransportUnpacking(TransportFrame_Struct *pframe, uint8_t *buffer, uint16_t size, uint8_t data)
 {
+    // 帧头 0xAA 0xAA
     if (data == FRAMEHEAD && pframe->lastByte == FRAMEHEAD)
     {
         pframe->offset = 0;
@@ -88,7 +75,7 @@ bool TransportUnpacking(TransportFrame_Struct *pframe, uint8_t *buffer, uint16_t
 
     if (pframe->recvFlag)
     {
-        // 收到结束符
+        // 帧尾 0x55 0x55
         if (data == FRAMETAIL && pframe->lastByte == FRAMETAIL)
         {
             pframe->recvFlag = false;
@@ -100,120 +87,138 @@ bool TransportUnpacking(TransportFrame_Struct *pframe, uint8_t *buffer, uint16_t
             }
 
             pframe->checkSum = Modbus_crc16(buffer, pframe->offset - 3);
+            uint16_t recvCrc = ((uint16_t)buffer[pframe->offset - 2] << 8) | buffer[pframe->offset - 3];
 
-            if (pframe->checkSum == ((buffer[pframe->offset - 2] << 8) | (buffer[pframe->offset - 3])))
-            {
+            if (pframe->checkSum == recvCrc)
                 return true;
-            }
-            else
-            {
-                pframe->errorCount++;
-                return false;
-            }
+
+            pframe->errorCount++;
+            return false;
         }
 
         buffer[pframe->offset++] = data;
 
-        // 数据长度超过 SIZE
         if (pframe->offset >= size)
         {
-            // 复位
             pframe->recvFlag = false;
             pframe->errorCount++;
         }
     }
 
     pframe->lastByte = data;
-
     return false;
 }
 
-bool CommUsart_RecvData(uint8_t *pbuf, uint8_t *plen)
+// 从 DMA 环形缓冲取出新到的字节,放进 pbuf,返回长度
+static bool CommUsart_RecvData(uint8_t *pbuf, uint8_t *plen)
 {
+    uint8_t data_cnt = DMA_RX_SIZE - __HAL_DMA_GET_COUNTER(&hdma_uart1);
+    *pbuf = Rxbuffer[recv_offset];
 
-    uint8_t data_cnt = 50 - __HAL_DMA_GET_COUNTER(&hdma_uart1);
-    *pbuf = Rxbuffer[CommRxBuffer.offset];
-    if (data_cnt < CommRxBuffer.offset)
+    if (data_cnt < recv_offset)
     {
-        *plen = 50 - CommRxBuffer.offset;
-        CommRxBuffer.offset = 0;
+        *plen = DMA_RX_SIZE - recv_offset;
+        recv_offset = 0;
     }
     else
     {
-        *plen = data_cnt - CommRxBuffer.offset;
-        CommRxBuffer.offset = data_cnt;
+        *plen = data_cnt - recv_offset;
+        recv_offset = data_cnt;
     }
 
-    if (*plen > 0)
-        return true;
+    return *plen > 0;
+}
 
-    return false;
+static void Parse_Save(const uint8_t *buf)
+{
+    DataPacket_Type.PUMP1_EN     = buf_u16_le(buf, 2);
+    DataPacket_Type.START1       = buf_u16_le(buf, 4);
+    DataPacket_Type.FULL1        = buf_u16_le(buf, 6);
+    DataPacket_Type.START2       = buf_u16_le(buf, 8);
+    DataPacket_Type.FULL2        = buf_u16_le(buf, 10);
+    DataPacket_Type.SPRAYMAIN    = buf_u16_le(buf, 12);
+    DataPacket_Type.RAIN_ONTIME  = buf_u16_le(buf, 14);
+    DataPacket_Type.RAIN_OFFTIME = buf_u16_le(buf, 16);
+    DataPacket_Type.EX_AUTO      = buf_u16_le(buf, 18);
+    DataPacket_Type.EX_SET       = buf_u16_le(buf, 20);
+    DataPacket_Type.EX_DELAY     = buf_u16_le(buf, 22);
+    DataPacket_Type.PUMP_STDUTY  = buf_u16_le(buf, 24);
+    DataPacket_Type.Hz_Mv        = buf_u16_le(buf, 26);
+    DataPacket_Type.LightSen     = buf_u16_le(buf, 28);
+    DataPacket_Type.Bright       = buf_u16_le(buf, 30);
+    DataPacket_Type.FLEX0        = buf_u16_le(buf, 32);
+    DataPacket_Type.FLEX100      = buf_u16_le(buf, 34);
+    DataPacket_Type.FLUID_MAIN   = buf_u16_le(buf, 36);
+    DataPacket_Type.EX_REV       = buf_u16_le(buf, 38);
+    DataPacket_Type.TEMP_UINT    = buf_u16_le(buf, 40);
+}
+
+static void Parse_FactorySave(const uint8_t *buf)
+{
+    DataPacket_Type.MAF_ADJ    = buf_u16_le(buf, 2);
+    DataPacket_Type.ETH_ADJ    = buf_u16_le(buf, 4);
+    DataPacket_Type.AFR_ADJ    = buf_u16_le(buf, 6);
+    DataPacket_Type.LEVEL1_VAL = buf_u16_le(buf, 8);
+    DataPacket_Type.LEVEL2_VAL = buf_u16_le(buf, 10);
+    DataPacket_Type.LEVEL3_VAL = buf_u16_le(buf, 12);
+    DataPacket_Type.DAC1_ADJ   = buf_u16_le(buf, 14);
+    DataPacket_Type.DAC2_ADJ   = buf_u16_le(buf, 16);
 }
 
 void Comm_unpack(void)
 {
     static uint8_t temp[50];
     static uint8_t lens = 0;
-    if (CommUsart_RecvData(temp, &lens))
+
+    if (!CommUsart_RecvData(temp, &lens))
+        return;
+
+    for (uint8_t i = 0; i < lens; i++)
     {
-        for (uint8_t i = 0; i < lens; i++)
+        if (!TransportUnpacking(&TransportFrame_Type, comm_buffer, COMM_BUF_SIZE, temp[i]))
+            continue;
+
+        display_cmd = ((uint16_t)comm_buffer[0] << 8) | comm_buffer[1];
+        DataPacket_Type.updated = 1;
+
+        switch (display_cmd)
         {
-            if (TransportUnpacking(&TransportFrame_Type, comm_buffer, 50, temp[i]))
-            {
-                display_cmd = comm_buffer[0] << 8 | comm_buffer[1];
-                DataPacket_Type.updated = 1;
-                if (display_cmd == SAVE_CMD)
-                {
-                    DataPacket_Type.PUMP1_EN = comm_buffer[3] << 8 | comm_buffer[2];
-                    DataPacket_Type.START1 = comm_buffer[5] << 8 | comm_buffer[4];
-                    DataPacket_Type.FULL1 = comm_buffer[7] << 8 | comm_buffer[6];
-                    DataPacket_Type.START2 = comm_buffer[9] << 8 | comm_buffer[8];
-                    DataPacket_Type.FULL2 = comm_buffer[11] << 8 | comm_buffer[10];
-                    DataPacket_Type.SPRAYMAIN = comm_buffer[13] << 8 | comm_buffer[12];
-                    DataPacket_Type.RAIN_ONTIME = comm_buffer[15] << 8 | comm_buffer[14];
-                    DataPacket_Type.RAIN_OFFTIME = comm_buffer[17] << 8 | comm_buffer[16];
-                    DataPacket_Type.EX_AUTO = comm_buffer[19] << 8 | comm_buffer[18];
-                    DataPacket_Type.EX_SET = comm_buffer[21] << 8 | comm_buffer[20];
-                    DataPacket_Type.EX_DELAY = comm_buffer[23] << 8 | comm_buffer[22];
-                    DataPacket_Type.PUMP_STDUTY = comm_buffer[25] << 8 | comm_buffer[24];
-                    DataPacket_Type.Hz_Mv = comm_buffer[27] << 8 | comm_buffer[26];
-                    DataPacket_Type.LightSen = comm_buffer[29] << 8 | comm_buffer[28];
-                    DataPacket_Type.Bright = comm_buffer[31] << 8 | comm_buffer[30];
-                    DataPacket_Type.FLEX0 = comm_buffer[33] << 8 | comm_buffer[32];
-                    DataPacket_Type.FLEX100 = comm_buffer[35] << 8 | comm_buffer[34];
-                    DataPacket_Type.FLUID_MAIN = comm_buffer[37] << 8 | comm_buffer[36];
-                    DataPacket_Type.EX_REV = comm_buffer[39] << 8 | comm_buffer[38];
-                    DataPacket_Type.TEMP_UINT = comm_buffer[41] << 1 | comm_buffer[40];
-                }
-                else if (display_cmd == BACK_CMD)
-                {
-                }
-                else if (display_cmd == TEST_CMD)
-                {
-                    DataPacket_Type.TEST_SET = comm_buffer[3] << 8 | comm_buffer[2];
-                }
-                else if (display_cmd == EX_CMD)
-                {
-                    DataPacket_Type.EX_VAL = comm_buffer[3] << 8 | comm_buffer[2];
-                }
-                else if (display_cmd == PAGESETTING_CMD)
-                {
-                    
-                }
-                else if (display_cmd == FACTORY_MODE_CMD)
-                {
-                    
-                }
-                else if (display_cmd == FACTORY_SAVE_CMD)
-                {
-                    DataPacket_Type.MAF_ADJ = comm_buffer[3] << 8 | comm_buffer[2];
-                    DataPacket_Type.ETH_ADJ = comm_buffer[5] << 8 | comm_buffer[4];
-                    DataPacket_Type.AFR_ADJ = comm_buffer[7] << 8 | comm_buffer[6];
-                    DataPacket_Type.LEVEL1_VAL = comm_buffer[9] << 8 | comm_buffer[8];
-                    DataPacket_Type.LEVEL2_VAL = comm_buffer[11] << 8 | comm_buffer[10];
-                    DataPacket_Type.LEVEL3_VAL = comm_buffer[13] << 8 | comm_buffer[12];
-                }
-            }
+        case SAVE_CMD:
+            Parse_Save(comm_buffer);
+            break;
+        case TEST_CMD:
+            DataPacket_Type.TEST_SET = buf_u16_le(comm_buffer, 2);
+            break;
+        case EX_CMD:
+            DataPacket_Type.EX_VAL = buf_u16_le(comm_buffer, 2);
+            break;
+        case FACTORY_SAVE_CMD:
+            Parse_FactorySave(comm_buffer);
+            break;
+        case BACK_CMD:
+        case PAGESETTING_CMD:
+        case FACTORY_MODE_CMD:
+        default:
+            break;
         }
     }
+}
+
+/*------------------------------------------------------------------------------
+ * USART2 — 230400 baud, 8N1, DMA 循环接收
+ *----------------------------------------------------------------------------*/
+void MX_USART2_UART_Init(void)
+{
+    huart2.Instance = USART2;
+    huart2.Init.BaudRate = 230400;
+    huart2.Init.WordLength = UART_WORDLENGTH_8B;
+    huart2.Init.StopBits = UART_STOPBITS_1;
+    huart2.Init.Parity = UART_PARITY_NONE;
+    huart2.Init.Mode = UART_MODE_TX_RX;
+    huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+    if (HAL_UART_Init(&huart2) != HAL_OK)
+        Error_Handler();
+
+    HAL_UART_Receive_DMA(&huart2, Rxbuffer, UART_RX_BUF_SIZE);
 }

@@ -435,6 +435,11 @@
               <FileType>1</FileType>
               <FilePath>..\Src\flash.c</FilePath>
             </File>
+            <File>
+              <FileName>flex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\flex.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -519,6 +524,16 @@
               <FileName>stm32f1xx_hal_exti.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_dac.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_dac.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_dac_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_dac_ex.c</FilePath>
             </File>
           </Files>
         </Group>
