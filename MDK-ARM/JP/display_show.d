@@ -23,4 +23,5 @@ jp/display_show.o: ..\Src\display_show.c ..\Inc\display_show.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_tim.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_tim_ex.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_uart.h \
-  ..\Inc\display_comm.h ..\Inc\config.h ..\Inc\flash.h ..\Inc\get_maf.h
+  ..\Inc\display_comm.h ..\Inc\config.h ..\Inc\flash.h \
+  ..\Inc\display_comm.h ..\Inc\get_maf.h ..\Inc\main.h

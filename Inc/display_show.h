@@ -3,8 +3,9 @@
 
 #include "stm32f1xx_hal.h"
 
-#define NORMAL_MODE 0
-#define TEST_MODE   1
+#define NORMAL_MODE     0
+#define TEST_MODE       1
+#define FACTORY_MODE    2
 
 void Display_StartPage(void);
 void Refresh_Setting(void);
@@ -15,5 +16,7 @@ void TestTask(void);
 uint8_t GetMode(void);
 void SetMode(uint8_t mode);
 uint16_t GetTestData(void);
+void Display_FactoryPage(void);
+void Display_BackgroundSetting(void);
 
 #endif

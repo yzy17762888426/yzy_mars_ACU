@@ -23,4 +23,5 @@ jp/get_maf.o: ..\Src\get_maf.c ..\Inc\get_maf.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_tim.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_tim_ex.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_uart.h \
-  ..\Inc\stm32f1xx_it.h ..\Inc\display_comm.h ..\Inc\display_show.h
+  ..\Inc\stm32f1xx_it.h ..\Inc\display_comm.h ..\Inc\display_show.h \
+  ..\Inc\main.h

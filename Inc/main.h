@@ -30,6 +30,7 @@ extern "C" {
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_hal.h"
 
+#define SW_VERSION     66
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -61,7 +62,36 @@ void Error_Handler(void);
 
 /* Private defines -----------------------------------------------------------*/
 /* USER CODE BEGIN Private defines */
+#define ADC_CH_COUNT 10
 
+// ADC通道索引
+#define CH_LIGHT_SENS 0  // PC0 IN10  光敏电阻
+#define CH_PUMP1_CUR  1  // PC1 IN11  PUMP1电机电流
+#define CH_BAT_VOLT   2  // PC2 IN12  电瓶电压
+#define CH_PUMP2_CUR  3  // PC3 IN13  PUMP2电机电流
+#define CH_RESERVE_C4 4  // PC4 IN14  预留
+#define CH_LIQUID_LVL 5  // PA6 IN6   液位检测
+#define CH_RESERVE_A7 6  // PA7 IN7   预留
+#define CH_RESERVE_B0 7  // PB0 IN8   预留
+#define CH_MAF_MV     8  // PB1 IN9   MAF毫伏输入
+#define CH_RESERVE_A0 9  // PA0 IN0   预留
+
+extern uint16_t ADvalue[ADC_CH_COUNT];
+
+#define AD_LIGHT_SENS ADvalue[CH_LIGHT_SENS]
+#define AD_PUMP1_CUR  ADvalue[CH_PUMP1_CUR]
+#define AD_BAT_VOLT   ADvalue[CH_BAT_VOLT]
+#define AD_PUMP2_CUR  ADvalue[CH_PUMP2_CUR]
+#define AD_RESERVE_C4 ADvalue[CH_RESERVE_C4]
+#define AD_LIQUID_LVL ADvalue[CH_LIQUID_LVL]
+#define AD_RESERVE_A7 ADvalue[CH_RESERVE_A7]
+#define AD_RESERVE_B0 ADvalue[CH_RESERVE_B0]
+#define AD_MAF_MV     ADvalue[CH_MAF_MV]
+#define AD_RESERVE_A0 ADvalue[CH_RESERVE_A0]
+
+uint8_t Get_PA1_Duty(void);
+uint16_t Get_PA1_Freq(void);
+void PA1_Sample(void);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -103,31 +103,43 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     __HAL_RCC_ADC1_CLK_ENABLE();
   
     __HAL_RCC_GPIOC_CLK_ENABLE();
-    /**ADC1 GPIO Configuration    
-    PC0     ------> ADC1_IN10
-    PC1     ------> ADC1_IN11
-    PC2     ------> ADC1_IN12 
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    /**ADC1 GPIO Configuration
+    PC1     ------> ADC1_IN11  PUMP1电流
+    PC2     ------> ADC1_IN12  电瓶电压
+    PC3     ------> ADC1_IN13  PUMP2电流
+    PC4     ------> ADC1_IN14  预留
+    PA0     ------> ADC1_IN0   预留
+    PA1     ------> ADC1_IN1   预留
+    PA6     ------> ADC1_IN6   液位
+    PA7     ------> ADC1_IN7   预留
+    PB0     ------> ADC1_IN8   预留
+    PB1     ------> ADC1_IN9   MAF_MV
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_6|GPIO_PIN_7;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-//    /* ADC1 DMA Init */
-//    /* ADC1 Init */
-//    hdma_adc1.Instance = DMA1_Channel1;
-//    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
-//    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
-//    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
-//    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
-//    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-//    hdma_adc1.Init.Mode = DMA_CIRCULAR;
-//    hdma_adc1.Init.Priority = DMA_PRIORITY_LOW;
-//    if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
-//    {
-//      Error_Handler();
-//    }
+    /* ADC1 DMA Init */
+    hdma_adc1.Instance = DMA1_Channel1;
+    hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_adc1.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_adc1.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_adc1.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
+    hdma_adc1.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
+    hdma_adc1.Init.Mode = DMA_CIRCULAR;
+    hdma_adc1.Init.Priority = DMA_PRIORITY_HIGH;
+    if (HAL_DMA_Init(&hdma_adc1) != HAL_OK)
+    {
+      Error_Handler();
+    }
 
-//    __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc1);
+    __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc1);
 
   /* USER CODE BEGIN ADC1_MspInit 1 */
 

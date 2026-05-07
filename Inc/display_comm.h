@@ -4,11 +4,13 @@
 #include "stm32f1xx_hal.h"
 #include "stdbool.h"
 
-#define SAVE_CMD 				0xF10A
-#define BACK_CMD 	  		0xF20B
-#define TEST_CMD 				0xF30C
-#define PAGESETTING_CMD 0xF40D
-#define RAINSET_CMD 	  0xF50E
+#define SAVE_CMD 								0xF10A
+#define BACK_CMD 	  		    		0xF20B
+#define TEST_CMD 								0xF30C
+#define PAGESETTING_CMD         0xF40D
+#define EX_CMD                  0xF60F
+#define FACTORY_MODE_CMD        0xF912
+#define FACTORY_SAVE_CMD        0xF811
 
 
 #define HZ_MODE 	  		0x00
@@ -16,19 +18,45 @@
 
 // 定义需要解析的变量结构
 typedef struct {
+    uint16_t PUMP1_EN;
     uint16_t START1;    // STA1的值
-    uint16_t START2;    // STA2的值
     uint16_t FULL1;   // FULL1的值
+
+    uint16_t PUMP2_EN;
+    uint16_t START2;    // STA2的值
     uint16_t FULL2;   // FULL2的值
-    uint16_t EXSET;   // EXSET的值
-	  uint16_t TEST_SET;   // TEST_SET的值
-	  uint8_t  EX_MODE;
-		uint8_t  OUT_VALUE;
-	  uint16_t RAIN_ONTIME;  
-	  uint16_t RAIN_OFFTIME;
-		uint8_t  PUMP_ENABLE;
-    uint8_t  updated; // 标记是否有数据更新
-		uint16_t Hz_Mv;
+
+    uint16_t SPRAYMAIN; 
+    uint16_t RAIN_ONTIME;  
+		uint16_t RAIN_OFFTIME;
+
+    uint16_t EX_AUTO;   // EXSET的值
+    uint16_t EX_SET;   // EXSET的值
+    uint16_t EX_DELAY;   // EXSET的值
+
+    uint16_t PUMP_STDUTY;   // EXSET的值
+    uint16_t Hz_Mv;
+    uint16_t LightSen;
+    uint16_t Bright;
+
+    uint16_t FLEX0;
+    uint16_t FLEX100;
+
+    uint16_t FLUID_MAIN;
+
+    uint16_t EX_REV;
+    uint16_t TEMP_UINT;
+
+		uint16_t TEST_SET;   // TEST_SET的值
+    uint16_t EX_VAL;
+    uint16_t updated; // 标记是否有数据更新
+
+    uint16_t MAF_ADJ;   // TEST_SET的值
+    uint16_t ETH_ADJ;
+    uint16_t AFR_ADJ; // 标记是否有数据更新
+    uint16_t LEVEL1_VAL;   // TEST_SET的值
+    uint16_t LEVEL2_VAL;
+    uint16_t LEVEL3_VAL; // 标记是否有数据更新
 } DataPacket_Struct;
 
 
