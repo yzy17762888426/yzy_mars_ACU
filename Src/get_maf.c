@@ -35,10 +35,10 @@ void GetFreqHz_Task(void)
     else if (GetMode() == TEST_MODE)
         freq_show = GetTestData();
 
-    a_progress = Show_DataPacketType.PUMP1_EN ?
-        Cal_PumpProgress(freq_show, Show_DataPacketType.START1, Show_DataPacketType.FULL1) : 0;
-    b_progress = Show_DataPacketType.PUMP2_EN ?
-        Cal_PumpProgress(freq_show, Show_DataPacketType.START2, Show_DataPacketType.FULL2) : 0;
+   a_progress = Show_DataPacketType.PUMP1_EN ?
+       Cal_PumpProgress(freq_show, Show_DataPacketType.START1, Show_DataPacketType.FULL1) : 0;
+   b_progress = Show_DataPacketType.PUMP2_EN ?
+       Cal_PumpProgress(freq_show, Show_DataPacketType.START2, Show_DataPacketType.FULL2) : 0;
 
     printf("mafValueShow.txt=\"%d\"\xff\xff\xff", freq_show);
 }

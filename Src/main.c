@@ -59,7 +59,7 @@ int main(void)
             if (tick % 100 == 0)
             {
                 GetFreqHz_Task();
-                Flex_DAC_Out();
+         //       Flex_DAC_Out();
             }
             else if (tick % 100 == 20)
             {
@@ -72,8 +72,8 @@ int main(void)
             Display_FactoryPage();
         }
 
-        Display_BackgroundSetting();
-        Display_Warning();
+        // Display_BackgroundSetting();
+        // Display_Warning();
         Refresh_Setting();
         Comm_unpack();
     }

@@ -41,38 +41,40 @@ void Flash_Init(void)
  *----------------------------------------------------------------------------*/
 void Display_StartPage(void)
 {
-    NEX_PAGE(page0, 500);
+    //NEX_PAGE(page0, 500);
+		printf("page page0\xff\xff\xff");
 
     // 起跳 / 满量
-    NEX_TXT_INT("startValueShow",  Show_DataPacketType.START1);
-    NEX_TXT_INT("fullValueShow",   Show_DataPacketType.FULL1);
-    NEX_TXT_INT("startValueSh2",   Show_DataPacketType.START2);
-    NEX_TXT_INT("fullValueShow2",  Show_DataPacketType.FULL2);
+		printf("startValueShow.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.START1);
+		printf("fullValueShow.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.FULL1);
+		printf("startValueSh2.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.START2);
+		printf("fullValueShow2.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.FULL2);
 
     // 喷淋时间
-    NEX_TXT_INT("sprayOp",    Show_DataPacketType.RAIN_ONTIME);
-    NEX_TXT_INT("sprayIdle",  Show_DataPacketType.RAIN_OFFTIME);
+		printf("sprayOp.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.RAIN_ONTIME);
+		printf("sprayIdle.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.RAIN_OFFTIME);
 
     // 状态图标
-    NEX_PIC("Pump1Stat", Show_DataPacketType.PUMP1_EN  ? PIC_ON : PIC_OFF);
-    NEX_PIC("Pump2Stat", Show_DataPacketType.PUMP2_EN  ? PIC_ON : PIC_OFF);
-    NEX_PIC("RainStat",  Show_DataPacketType.SPRAYMAIN ? PIC_ON : PIC_OFF);
-    NEX_PIC("ExStat",    Show_DataPacketType.EX_VAL    ? PIC_ON : PIC_OFF);
+		printf("Pump1Stat.pic=%d\xff\xff\xff",Show_DataPacketType.PUMP1_EN? PIC_ON : PIC_OFF);
+		printf("Pump2Stat.pic=%d\xff\xff\xff",Show_DataPacketType.PUMP2_EN? PIC_ON : PIC_OFF);
+		printf("RainStat.pic=%d\xff\xff\xff",Show_DataPacketType.SPRAYMAIN? PIC_ON : PIC_OFF);
+		printf("ExStat.pic=%d\xff\xff\xff",Show_DataPacketType.EX_VAL? PIC_ON : PIC_OFF);
 
     // 排气模式 / 单位
-    NEX_TXT("valueStaus", Show_DataPacketType.EX_AUTO ? "AT" : "MT");
-    NEX_TXT("unit",       Show_DataPacketType.Hz_Mv   ? "mV" : "HZ");
+		printf("valueStaus.txt=\"%s\"\xff\xff\xff",Show_DataPacketType.EX_AUTO ? "AT" : "MT");
+		printf("unit.txt=\"%s\"\xff\xff\xff",Show_DataPacketType.Hz_Mv   ? "MV" : "Hz");
+
 
     // 测试图标可见性
     if (GetMode() == NORMAL_MODE)
-        NEX_VIS("testIco", 0);
+			printf("vis testIco,0\xff\xff\xff");
     else if (GetMode() == TEST_MODE)
-        NEX_VIS("testIco", 1);
+      printf("vis testIco,1\xff\xff\xff");
 
     // 告警图标初始隐藏
-    NEX_VIS("FluidIco", 0);
-    NEX_VIS("hiIco", 0);
-    NEX_VIS("lowIco", 0);
+		printf("vis FluidIco,0\xff\xff\xff");
+		printf("vis hiIco,0\xff\xff\xff");
+		printf("vis lowIco,0\xff\xff\xff");
 }
 
 /*------------------------------------------------------------------------------
@@ -80,56 +82,56 @@ void Display_StartPage(void)
  *----------------------------------------------------------------------------*/
 void Display_SettingPage(void)
 {
-    NEX_PAGE("page1", 100);
+    printf("page page1\xff\xff\xff");
 
     // 泵 A
-    NEX_VAL("STA1",         Show_DataPacketType.START1);
-    NEX_VAL("FULL1",        Show_DataPacketType.FULL1);
-    NEX_VAL("pumpEnable1",  Show_DataPacketType.PUMP1_EN ? 1 : 0);
+    printf("STA1.val=%d\xff\xff\xff",Show_DataPacketType.START1);
+    printf("FULL1.val=%d\xff\xff\xff", Show_DataPacketType.FULL1);
+    printf("pumpEnable1.val=%d\xff\xff\xff", Show_DataPacketType.PUMP1_EN ? 1 : 0);
 
     // 泵 B
-    NEX_VAL("STA2",         Show_DataPacketType.START2);
-    NEX_VAL("FULL2",        Show_DataPacketType.FULL2);
-    NEX_VAL("pumpEnable2",  Show_DataPacketType.PUMP2_EN ? 1 : 0);
+    printf("STA2.val=%d\xff\xff\xff",Show_DataPacketType.START2);
+    printf("FULL2.val=%d\xff\xff\xff", Show_DataPacketType.FULL2);
+    printf("pumpEnable2.val=%d\xff\xff\xff", Show_DataPacketType.PUMP2_EN ? 1 : 0);
 
     // 喷淋
-    NEX_VAL("sprayMain",   Show_DataPacketType.SPRAYMAIN ? 1 : 0);
-    NEX_VAL("rainOnTime",  Show_DataPacketType.RAIN_ONTIME);
-    NEX_VAL("rainOffTime", Show_DataPacketType.RAIN_OFFTIME);
+    printf("sprayMain.val=%d\xff\xff\xff",Show_DataPacketType.SPRAYMAIN ? 1 : 0);
+    printf("rainOnTime.val=%d\xff\xff\xff", Show_DataPacketType.RAIN_ONTIME);
+    printf("rainOffTime.val=%d\xff\xff\xff", Show_DataPacketType.RAIN_OFFTIME);
 
     // 排气
-    NEX_VAL("setExAuto", Show_DataPacketType.EX_AUTO ? 1 : 0);
-    NEX_VAL("EX_SET",    Show_DataPacketType.EX_SET);
-    NEX_VAL("exDelay",   Show_DataPacketType.EX_DELAY);
+    printf("setExAuto.val=%d\xff\xff\xff",Show_DataPacketType.EX_AUTO ? 1 : 0);
+    printf("EX_SET.val=%d\xff\xff\xff", Show_DataPacketType.EX_SET);
+    printf("exDelay.val=%d\xff\xff\xff", Show_DataPacketType.EX_DELAY);
 
     // 泵占空比
-    NEX_VAL("pumpStdDuty", Show_DataPacketType.PUMP_STDUTY);
+    printf("pumpStdDuty.val=%d\xff\xff\xff", Show_DataPacketType.PUMP_STDUTY);
 
     // 显示
-    NEX_VAL("mafTypeSelect", Show_DataPacketType.Hz_Mv == MV_MODE ? 1 : 0);
-    NEX_VAL("lightSen",      Show_DataPacketType.LightSen);
-    NEX_VAL("bright",        Show_DataPacketType.Bright);
+    printf("mafTypeSelect.val=%d\xff\xff\xff",Show_DataPacketType.Hz_Mv == MV_MODE ? 1 : 0);
+    printf("lightSen.val=%d\xff\xff\xff", Show_DataPacketType.LightSen);
+    printf("bright.val=%d\xff\xff\xff", Show_DataPacketType.Bright);
 
     // MAF 标定
-    NEX_VAL("flex0",   Show_DataPacketType.FLEX0);
-    NEX_VAL("flex100", Show_DataPacketType.FLEX100);
+    printf("flex0.val=%d\xff\xff\xff", Show_DataPacketType.FLEX0);
+    printf("flex100.val=%d\xff\xff\xff", Show_DataPacketType.FLEX100);
 
     // 流量
-    NEX_VAL("Fluidmain", Show_DataPacketType.FLUID_MAIN);
+    printf("Fluidmain.val=%d\xff\xff\xff", Show_DataPacketType.FLUID_MAIN);
 
     // 排气反向
-    NEX_VAL("Ex_Rev", Show_DataPacketType.EX_REV);
+    printf("Ex_Rev.val=%d\xff\xff\xff", Show_DataPacketType.EX_REV);
 
     // 温度单位
-    NEX_VAL("Temp_Select", Show_DataPacketType.TEMP_UINT);
+    printf("Temp_Select.val=%d\xff\xff\xff", Show_DataPacketType.TEMP_UINT);
 
     // 测试值
-    NEX_VAL("mafValueInput", Show_DataPacketType.TEST_SET);
+    printf("mafValueInput.val=%d\xff\xff\xff", Show_DataPacketType.TEST_SET);
 
     // 按钮复位
-    NEX_VAL("setSave", 0);
-    NEX_VAL("testCmd", 0);
-    NEX_VAL("outSave", 0);
+    printf("setSave.val=0\xff\xff\xff");
+    printf("testCmd.val=0\xff\xff\xff");
+    printf("outSave.val=0\xff\xff\xff");
 }
 
 /*------------------------------------------------------------------------------
