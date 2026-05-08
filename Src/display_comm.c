@@ -11,6 +11,7 @@ extern UART_HandleTypeDef huart2;
 #define DMA_RX_SIZE     100  // 必须与 main.h 里 UART_RX_BUF_SIZE 一致
 
 DataPacket_Struct DataPacket_Type;
+uint8_t test_en = 0;     // TEST_CMD payload[4]: 1=进入 test, 0=退出 test
 
 static TransportFrame_Struct TransportFrame_Type;
 static uint16_t display_cmd = 0;
@@ -198,7 +199,8 @@ void Comm_unpack(void)
             Parse_Save(comm_buffer);
             break;
         case TEST_CMD:
-            DataPacket_Type.TEST_SET = buf_u16_le(comm_buffer, 2);
+            DataPacket_Type.TEST_SET = (comm_buffer[2] << 8) | comm_buffer[3];
+            test_en = comm_buffer[4];
             break;
         case EX_CMD:
             DataPacket_Type.EX_VAL = comm_buffer[2];

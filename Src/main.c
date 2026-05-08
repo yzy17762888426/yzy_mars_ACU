@@ -6,6 +6,7 @@
 #include "get_maf.h"
 #include "display_comm.h"
 #include "flex.h"
+#include "exhaust.h"
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
@@ -46,6 +47,9 @@ int main(void)
     MX_DAC_Init();
 
     Flash_Init();
+
+    Exhaust_Init();
+
     InitCommBuffer();
     Display_StartPage();
 
@@ -54,7 +58,7 @@ int main(void)
         uint8_t  mode = GetMode();
         uint32_t tick = HAL_GetTick();
 
-        if (mode == NORMAL_MODE || mode == TEST_MODE)
+        if (mode == NORMAL_MODE)
         {
             if (tick % 100 == 0)
             {
@@ -65,7 +69,22 @@ int main(void)
             {
                 A_MotorPump_Task();
                 B_MotorPump_Task();
-								Display_Warning();
+                ExhaustValve_Task();
+                Display_Warning();
+            }
+        }
+        else if (mode == TEST_MODE)
+        {
+            if (tick % 100 == 0)
+            {
+                GetFreqHz_Task();
+            }
+            else if (tick % 100 == 20)
+            {
+                A_MotorPump_Task();
+                B_MotorPump_Task();
+                ExhaustValve_Task();
+                Display_Warning();
             }
         }
         else if (mode == FACTORY_MODE)

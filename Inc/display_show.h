@@ -7,7 +7,7 @@
 #define NORMAL_MODE     0       // 正常运行
 #define TEST_MODE       1       // 测试模式(模拟 MAF 输入)
 #define FACTORY_MODE    2       // 出厂调校
-#define SETTING_MODE    3       // 出厂调校
+#define SETTING_MODE    3       // 设置模式（非测试模式）
 
 // 初始化(从 Flash 读取已存设置)
 void Flash_Init(void);

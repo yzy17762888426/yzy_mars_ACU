@@ -102,5 +102,6 @@ void     InitCommBuffer(void);      // 启动前调用一次,清空接收游标
 uint16_t GetDisplay_Cmd(void);      // 返回最近一次解出的命令字
 
 extern DataPacket_Struct DataPacket_Type;
+extern uint8_t test_en;     // TEST_CMD payload[4]: 1=进入 test, 0=退出 test
 
 #endif

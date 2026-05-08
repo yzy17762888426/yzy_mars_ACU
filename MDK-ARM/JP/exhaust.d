@@ -1,4 +1,4 @@
-jp/display_show.o: ..\Src\display_show.c ..\Inc\display_show.h \
+jp/exhaust.o: ..\Src\exhaust.c ..\Inc\exhaust.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal.h \
   ..\Inc\stm32f1xx_hal_conf.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_rcc.h \
@@ -25,5 +25,4 @@ jp/display_show.o: ..\Src\display_show.c ..\Inc\display_show.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_tim.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_tim_ex.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_uart.h \
-  ..\Inc\display_comm.h ..\Inc\main.h ..\Inc\flash.h \
-  ..\Inc\display_comm.h ..\Inc\flex.h
+  ..\Inc\display_comm.h ..\Inc\get_maf.h

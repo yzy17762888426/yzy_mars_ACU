@@ -12,4 +12,7 @@ void GetFreqHz_Task(void);
 uint8_t Get_A_PumpProgress(void);
 uint8_t Get_B_PumpProgress(void);
 
+// 当前 MAF 显示值
+uint16_t GetFreqShow(void);
+
 #endif

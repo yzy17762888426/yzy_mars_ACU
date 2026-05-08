@@ -1,26 +1,26 @@
 #include "display_show.h"
 #include "display_comm.h"
 #include "main.h"
+#include "flash.h"
+#include "flex.h"
 #include "stdio.h"
 #include "string.h"
 
 /*------------------------------------------------------------------------------
  * Nextion 串口屏发送宏
- *  所有宏在发送后自动加 HAL_Delay(10),保证屏幕有处理时间
- *  NEX_PAGE 需要更长延迟,由调用方指定
+ *  参数为字符串字面量,通过 C 字符串拼接生成完整指令
+ *  每条指令后加 HAL_Delay(10) 保证屏幕处理时间
  *----------------------------------------------------------------------------*/
-
-
 #define PIC_OFF        8
 #define PIC_ON         9
+#define NEX_END        "\xff\xff\xff"
 
-
-#define NEX_VAL(name, v)       do { printf("name.val=%d\xff\xff\xff", (int)(v));          HAL_Delay(10); } while (0)
-#define NEX_TXT(name, t)       do { printf("name.txt=\"%s\"\xff\xff\xff", (t));           HAL_Delay(10); } while (0)
-#define NEX_TXT_INT(name, v)   do { printf("name.txt=\"%d\"\xff\xff\xff", (int)(v));      HAL_Delay(10); } while (0)
-#define NEX_PIC(name, p)       do { printf("name.pic=%d\xff\xff\xff", (int)(p));          HAL_Delay(10); } while (0)
-#define NEX_VIS(obj, on)       do { printf("vis obj,%d\xff\xff\xff", (on) ? 1 : 0);   HAL_Delay(10); } while (0)
-#define NEX_PAGE(name, ms)     do { printf("page name\xff\xff\xff"); HAL_Delay(ms); } while (0)
+#define NEX_VAL(name, v)       do { printf(name ".val=%d" NEX_END, (int)(v));          HAL_Delay(10); } while (0)
+#define NEX_TXT(name, t)       do { printf(name ".txt=\"%s\"" NEX_END, (t));           HAL_Delay(10); } while (0)
+#define NEX_TXT_INT(name, v)   do { printf(name ".txt=\"%d\"" NEX_END, (int)(v));      HAL_Delay(10); } while (0)
+#define NEX_PIC(name, p)       do { printf(name ".pic=%d" NEX_END, (int)(p));          HAL_Delay(10); } while (0)
+#define NEX_VIS(obj, on)       do { printf("vis " obj ",%d" NEX_END, (on) ? 1 : 0);   HAL_Delay(10); } while (0)
+#define NEX_PAGE(name, ms)     do { printf("page " name NEX_END); HAL_Delay(ms); } while (0)
 
 /*------------------------------------------------------------------------------
  * 模块变量
@@ -52,40 +52,39 @@ void Flash_Init(void)
  *----------------------------------------------------------------------------*/
 void Display_StartPage(void)
 {
-    //NEX_PAGE(page0, 500);
-		printf("page page0\xff\xff\xff");
+    NEX_PAGE("page0", 500);
 
     // 起跳 / 满量
-		printf("startValueShow.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.START1);
-		printf("fullValueShow.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.FULL1);
-		printf("startValueSh2.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.START2);
-		printf("fullValueShow2.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.FULL2);
+    NEX_TXT_INT("startValueShow",  Show_DataPacketType.START1);
+    NEX_TXT_INT("fullValueShow",   Show_DataPacketType.FULL1);
+    NEX_TXT_INT("startValueSh2",   Show_DataPacketType.START2);
+    NEX_TXT_INT("fullValueShow2",  Show_DataPacketType.FULL2);
 
     // 喷淋时间
-		printf("sprayOp.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.RAIN_ONTIME);
-		printf("sprayIdle.txt=\"%d\"\xff\xff\xff",Show_DataPacketType.RAIN_OFFTIME);
+    NEX_TXT_INT("sprayOp",   Show_DataPacketType.RAIN_ONTIME);
+    NEX_TXT_INT("sprayIdle", Show_DataPacketType.RAIN_OFFTIME);
 
     // 状态图标
-		printf("Pump1Stat.pic=%d\xff\xff\xff",Show_DataPacketType.PUMP1_EN? PIC_ON : PIC_OFF);
-		printf("Pump2Stat.pic=%d\xff\xff\xff",Show_DataPacketType.PUMP2_EN? PIC_ON : PIC_OFF);
-		printf("RainStat.pic=%d\xff\xff\xff",Show_DataPacketType.SPRAYMAIN? PIC_ON : PIC_OFF);
-		printf("ExStat.pic=%d\xff\xff\xff",Show_DataPacketType.EX_VAL? PIC_ON : PIC_OFF);
+    NEX_PIC("Pump1Stat", Show_DataPacketType.PUMP1_EN  ? PIC_ON : PIC_OFF);
+    NEX_PIC("Pump2Stat", Show_DataPacketType.PUMP2_EN  ? PIC_ON : PIC_OFF);
+    NEX_PIC("RainStat",  Show_DataPacketType.SPRAYMAIN ? PIC_ON : PIC_OFF);
+    NEX_PIC("ExStat",    Show_DataPacketType.EX_VAL    ? PIC_ON : PIC_OFF);
 
     // 排气模式 / 单位
-		printf("valueStaus.txt=\"%s\"\xff\xff\xff",Show_DataPacketType.EX_AUTO ? "AT" : "MT");
-		printf("unit.txt=\"%s\"\xff\xff\xff",Show_DataPacketType.Hz_Mv   ? "MV" : "Hz");
+    NEX_TXT("valueStaus", Show_DataPacketType.EX_AUTO ? "AT" : "MT");
+    NEX_TXT("unit",       Show_DataPacketType.Hz_Mv   ? "MV" : "Hz");
 
+    // 泵占空比(0~100%)
+    NEX_VAL("pump1", (TIM2->CCR3 + TIM2->CCR4) / 19);
+    NEX_VAL("pump2", (TIM2->CCR1 + TIM2->CCR2) / 19);
 
-    // 测试图标可见性
-    if (GetMode() == NORMAL_MODE)
-			printf("vis testIco,0\xff\xff\xff");
-    else if (GetMode() == TEST_MODE)
-      printf("vis testIco,1\xff\xff\xff");
+    // 测试图标
+    NEX_VIS("testIco", GetMode() == TEST_MODE);
 
     // 告警图标初始隐藏
-		printf("vis FluidIco,0\xff\xff\xff");
-		printf("vis hiIco,0\xff\xff\xff");
-		printf("vis lowIco,0\xff\xff\xff");
+    NEX_VIS("FluidIco", 0);
+    NEX_VIS("hiIco",    0);
+    NEX_VIS("lowIco",   0);
 }
 
 /*------------------------------------------------------------------------------
@@ -93,56 +92,56 @@ void Display_StartPage(void)
  *----------------------------------------------------------------------------*/
 void Display_SettingPage(void)
 {
-    printf("page page1\xff\xff\xff");
+    NEX_PAGE("page1", 500);
 
     // 泵 A
-    printf("STA1.val=%d\xff\xff\xff",Show_DataPacketType.START1);
-    printf("FULL1.val=%d\xff\xff\xff", Show_DataPacketType.FULL1);
-    printf("pumpEnable1.val=%d\xff\xff\xff", Show_DataPacketType.PUMP1_EN ? 1 : 0);
+    NEX_VAL("STA1",        Show_DataPacketType.START1);
+    NEX_VAL("FULL1",       Show_DataPacketType.FULL1);
+    NEX_VAL("pumpEnable1", Show_DataPacketType.PUMP1_EN ? 1 : 0);
 
     // 泵 B
-    printf("STA2.val=%d\xff\xff\xff",Show_DataPacketType.START2);
-    printf("FULL2.val=%d\xff\xff\xff", Show_DataPacketType.FULL2);
-    printf("pumpEnable2.val=%d\xff\xff\xff", Show_DataPacketType.PUMP2_EN ? 1 : 0);
+    NEX_VAL("STA2",        Show_DataPacketType.START2);
+    NEX_VAL("FULL2",       Show_DataPacketType.FULL2);
+    NEX_VAL("pumpEnable2", Show_DataPacketType.PUMP2_EN ? 1 : 0);
 
     // 喷淋
-    printf("sprayMain.val=%d\xff\xff\xff",Show_DataPacketType.SPRAYMAIN ? 1 : 0);
-    printf("rainOnTime.val=%d\xff\xff\xff", Show_DataPacketType.RAIN_ONTIME);
-    printf("rainOffTime.val=%d\xff\xff\xff", Show_DataPacketType.RAIN_OFFTIME);
+    NEX_VAL("sprayMain",   Show_DataPacketType.SPRAYMAIN ? 1 : 0);
+    NEX_VAL("rainOnTime",  Show_DataPacketType.RAIN_ONTIME);
+    NEX_VAL("rainOffTime", Show_DataPacketType.RAIN_OFFTIME);
 
     // 排气
-    printf("setExAuto.val=%d\xff\xff\xff",Show_DataPacketType.EX_AUTO ? 1 : 0);
-    printf("EX_SET.val=%d\xff\xff\xff", Show_DataPacketType.EX_SET);
-    printf("exDelay.val=%d\xff\xff\xff", Show_DataPacketType.EX_DELAY);
+    NEX_VAL("setExAuto",   Show_DataPacketType.EX_AUTO ? 1 : 0);
+    NEX_VAL("EX_SET",      Show_DataPacketType.EX_SET);
+    NEX_VAL("exDelay",     Show_DataPacketType.EX_DELAY);
 
     // 泵占空比
-    printf("pumpStdDuty.val=%d\xff\xff\xff", Show_DataPacketType.PUMP_STDUTY);
+    NEX_VAL("pumpStdDuty", Show_DataPacketType.PUMP_STDUTY);
 
     // 显示
-    printf("mafTypeSelect.val=%d\xff\xff\xff",Show_DataPacketType.Hz_Mv == MV_MODE ? 1 : 0);
-    printf("lightSen.val=%d\xff\xff\xff", Show_DataPacketType.LightSen);
-    printf("bright.val=%d\xff\xff\xff", Show_DataPacketType.Bright);
+    NEX_VAL("mafTypeSelect", Show_DataPacketType.Hz_Mv == MV_MODE ? 1 : 0);
+    NEX_VAL("lightSen",      Show_DataPacketType.LightSen);
+    NEX_VAL("bright",        Show_DataPacketType.Bright);
 
     // MAF 标定
-    printf("flex0.val=%d\xff\xff\xff", Show_DataPacketType.FLEX0);
-    printf("flex100.val=%d\xff\xff\xff", Show_DataPacketType.FLEX100);
+    NEX_VAL("flex0",   Show_DataPacketType.FLEX0);
+    NEX_VAL("flex100", Show_DataPacketType.FLEX100);
 
     // 流量
-    printf("Fluidmain.val=%d\xff\xff\xff", Show_DataPacketType.FLUID_MAIN);
+    NEX_VAL("Fluidmain", Show_DataPacketType.FLUID_MAIN);
 
     // 排气反向
-    printf("Ex_Rev.val=%d\xff\xff\xff", Show_DataPacketType.EX_REV);
+    NEX_VAL("Ex_Rev", Show_DataPacketType.EX_REV);
 
     // 温度单位
-    printf("Temp_Select.val=%d\xff\xff\xff", Show_DataPacketType.TEMP_UINT);
+    NEX_VAL("Temp_Select", Show_DataPacketType.TEMP_UINT);
 
     // 测试值
-    printf("mafValueInput.val=%d\xff\xff\xff", Show_DataPacketType.TEST_SET);
+    NEX_VAL("mafValueInput", Show_DataPacketType.TEST_SET);
 
     // 按钮复位
-    printf("setSave.val=0\xff\xff\xff");
-    printf("testCmd.val=0\xff\xff\xff");
-    printf("outSave.val=0\xff\xff\xff");
+    NEX_VAL("setSave", 0);
+    NEX_VAL("testCmd",  0);
+    NEX_VAL("outSave", 0);
 }
 
 /*------------------------------------------------------------------------------
@@ -181,19 +180,19 @@ static uint32_t factory_cal_tick = 0;
 void Display_FactoryPage(void)
 {
     // 静态参数(每次进页发送)
-    NEX_VAL("mafvadj", Show_DataPacketType.MAF_ADJ);
-    NEX_VAL("ethvadj", Show_DataPacketType.ETH_ADJ);
-    NEX_VAL("afrvadj", Show_DataPacketType.AFR_ADJ);
+    NEX_VAL("mafvadj",     Show_DataPacketType.MAF_ADJ);
+    NEX_VAL("ethvadj",     Show_DataPacketType.ETH_ADJ);
+    NEX_VAL("afrvadj",     Show_DataPacketType.AFR_ADJ);
 
-    NEX_VAL("level1", Show_DataPacketType.LEVEL1_VAL);
-    NEX_VAL("level2", Show_DataPacketType.LEVEL2_VAL);
-    NEX_VAL("level3", Show_DataPacketType.LEVEL3_VAL);
+    NEX_VAL("level1",      Show_DataPacketType.LEVEL1_VAL);
+    NEX_VAL("level2",      Show_DataPacketType.LEVEL2_VAL);
+    NEX_VAL("level3",      Show_DataPacketType.LEVEL3_VAL);
 
-    NEX_VAL("dac1_adj", Show_DataPacketType.DAC1_ADJ);
-    NEX_VAL("dac2_adj", Show_DataPacketType.DAC2_ADJ);
+    NEX_VAL("dac1_adj",    Show_DataPacketType.DAC1_ADJ);
+    NEX_VAL("dac2_adj",    Show_DataPacketType.DAC2_ADJ);
 
-    NEX_VAL("version",      SW_VERSION);
-    NEX_VAL("lightsensor",  ADvalue[CH_LIGHT_SENS]);
+    NEX_VAL("version",     SW_VERSION);
+    NEX_VAL("lightsensor", ADvalue[CH_LIGHT_SENS]);
 
     // 自动校准: 1s 刷新一次,读取当前 ADC 计算系数
     uint32_t now = HAL_GetTick();
@@ -218,18 +217,15 @@ void Display_BackgroundSetting(void)
     uint8_t dim;
 
     if (Show_DataPacketType.LightSen != 0)
-    {
         dim = (uint8_t)((uint32_t)AD_LIGHT_SENS * 100U / 4095U);
-    }
     else
-    {
         dim = (uint8_t)Show_DataPacketType.Bright;
-    }
 
     if (dim != last_dim)
     {
         last_dim = dim;
-//        printf("dim=%d" NEX_END, dim);
+        printf("dim=%d\xff\xff\xff", dim);
+        HAL_Delay(10);
     }
 }
 
@@ -240,8 +236,8 @@ void Display_BackgroundSetting(void)
  *  lowIco   — 电瓶欠压(ADC < BAT_ADC_LOW)
  *  三个图标同位置,多告警时轮流显示
  *----------------------------------------------------------------------------*/
-#define BAT_ADC_HIGH    3500    // 电瓶过压 ADC 阈值,需根据实际分压校准
-#define BAT_ADC_LOW     2400    // 电瓶欠压 ADC 阈值
+#define BAT_ADC_HIGH    3500
+#define BAT_ADC_LOW     2400
 #define LIQUID_LOW      2600
 
 static const char * const warn_icons[] = {"FluidIco", "hiIco", "lowIco"};
@@ -273,7 +269,7 @@ void Display_Warning(void)
     // 隐藏当前图标
     if (warn_shown < 3)
     {
-//        printf("vis %s,0" NEX_END, warn_icons[warn_shown]);
+        printf("vis %s,0\xff\xff\xff", warn_icons[warn_shown]);
         HAL_Delay(10);
     }
 
@@ -282,7 +278,7 @@ void Display_Warning(void)
     {
         warn_slot %= count;
         warn_shown = active[warn_slot++];
-//        printf("vis %s,1" NEX_END, warn_icons[warn_shown]);
+        printf("vis %s,1\xff\xff\xff", warn_icons[warn_shown]);
         HAL_Delay(10);
     }
     else
@@ -290,6 +286,55 @@ void Display_Warning(void)
         warn_shown = 0xFF;
         warn_slot  = 0;
     }
+}
+
+/*------------------------------------------------------------------------------
+ * 测试模式: 根据 TEST_SET 直接设置泵 PWM
+ *  base = PUMP_STDUTY(%) × 10 → CCR 基础占空比
+ *  映射: TEST_SET < START → 0, START~FULL → base~950, > FULL → 950
+ *----------------------------------------------------------------------------*/
+static void TestPump_SetDuty(__IO uint32_t *ccr_a, __IO uint32_t *ccr_b,
+                             uint16_t enable, uint16_t start, uint16_t full)
+{
+    if (!enable)
+    {
+        *ccr_a = 0;
+        *ccr_b = 0;
+        return;
+    }
+
+    uint32_t val = Show_DataPacketType.TEST_SET;
+
+    if (val > full)
+    {
+        *ccr_a = 950;
+        *ccr_b = 950;
+    }
+    else if (val >= start && full > start)
+    {
+        uint32_t base = (uint32_t)Show_DataPacketType.PUMP_STDUTY * 10;
+        uint32_t d = base + (val - start) * (950 - base) / (full - start);
+        *ccr_a = d;
+        *ccr_b = d;
+    }
+    else
+    {
+        *ccr_a = 0;
+        *ccr_b = 0;
+    }
+}
+
+static void TestPumpOutput(void)
+{
+    TestPump_SetDuty(&TIM2->CCR3, &TIM2->CCR4,
+                     Show_DataPacketType.PUMP1_EN,
+                     Show_DataPacketType.START1,
+                     Show_DataPacketType.FULL1);
+
+    TestPump_SetDuty(&TIM2->CCR1, &TIM2->CCR2,
+                     Show_DataPacketType.PUMP2_EN,
+                     Show_DataPacketType.START2,
+                     Show_DataPacketType.FULL2);
 }
 
 /*------------------------------------------------------------------------------
@@ -323,18 +368,25 @@ void Refresh_Setting(void)
     {
     case BACK_CMD:
     case SAVE_CMD:
+        SetMode(test_en ? TEST_MODE : NORMAL_MODE);
         Display_StartPage();
         break;
     case PAGESETTING_CMD:
-				SetMode(SETTING_MODE);
+        SetMode(SETTING_MODE);
         Display_SettingPage();
+        break;
+    case TEST_CMD:
+        SetMode(test_en ? TEST_MODE : NORMAL_MODE);
+        if (test_en)
+            TestPumpOutput();
         break;
     case FACTORY_MODE_CMD:
         SetMode(FACTORY_MODE);
-        Set_DAC1(4095);   // 出厂模式: DAC 输出满量程(外部放大至 5V)
+        Set_DAC1(4095);
         Set_DAC2(4095);
         break;
     case FACTORY_SAVE_CMD:
+        test_en = 0;
         SetMode(NORMAL_MODE);
         Set_DAC1(0);
         Set_DAC2(0);
