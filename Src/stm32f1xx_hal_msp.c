@@ -125,6 +125,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+    __HAL_RCC_DMA1_CLK_ENABLE();
+
     /* ADC1 DMA Init */
     hdma_adc1.Instance = DMA1_Channel1;
     hdma_adc1.Init.Direction = DMA_PERIPH_TO_MEMORY;
@@ -259,6 +261,7 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 */
 void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 {
+
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   if(huart->Instance==USART2)
   {
@@ -297,8 +300,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 		__HAL_LINKDMA(huart,hdmarx,hdma_uart1);
 
   /* USER CODE BEGIN USART2_MspInit 1 */
-//		HAL_NVIC_SetPriority(USART2_IRQn,3,3);			//抢占优先级3，子优先级3
-//		HAL_NVIC_EnableIRQ(USART2_IRQn);				//使能USART1中断通道
+		// HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
+		// HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
   /* USER CODE END USART2_MspInit 1 */
   }
 
@@ -334,7 +337,20 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
 }
 
 /* USER CODE BEGIN 1 */
+void HAL_DAC_MspInit(DAC_HandleTypeDef *hdac)
+{
+    if (hdac->Instance == DAC)
+    {
+        GPIO_InitTypeDef GPIO_InitStruct = {0};
 
+        __HAL_RCC_DAC_CLK_ENABLE();
+        __HAL_RCC_GPIOA_CLK_ENABLE();
+
+        GPIO_InitStruct.Pin = GPIO_PIN_4 | GPIO_PIN_5;
+        GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+        HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    }
+}
 /* USER CODE END 1 */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

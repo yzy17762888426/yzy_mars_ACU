@@ -69,6 +69,14 @@ void MX_DAC_Init(void)
 {
     DAC_ChannelConfTypeDef sConfig = {0};
 
+    __HAL_RCC_DAC_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = GPIO_PIN_4 | GPIO_PIN_5;
+    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
     hdac.Instance = DAC;
     if (HAL_DAC_Init(&hdac) != HAL_OK)
         Error_Handler();
@@ -115,14 +123,14 @@ void Flex_DAC_Out(void)
                    (int32_t)eth * ((int32_t)Show_DataPacketType.FLEX100 -
                                    (int32_t)Show_DataPacketType.FLEX0) / 1000;
 
-    int32_t dac1 = base * (int32_t)Show_DataPacketType.DAC1_ADJ / 10000;
+    int32_t dac1 = (int32_t)((int64_t)base * Show_DataPacketType.ETH_ADJ / 10000);
     if (dac1 < 0)     dac1 = 0;
     if (dac1 > 4095)  dac1 = 4095;
 
-    int32_t dac2 = base * (int32_t)Show_DataPacketType.DAC2_ADJ / 10000;
-    if (dac2 < 0)     dac2 = 0;
-    if (dac2 > 4095)  dac2 = 4095;
+    // int32_t dac2 = (int32_t)((int64_t)base * Show_DataPacketType.DAC2_ADJ / 10000);
+    // if (dac2 < 0)     dac2 = 0;
+    // if (dac2 > 4095)  dac2 = 4095;
 
     Set_DAC1((uint16_t)dac1);
-    Set_DAC2((uint16_t)dac2);
+//    Set_DAC2((uint16_t)dac2);
 }

@@ -7,8 +7,8 @@ extern UART_HandleTypeDef huart2;
 #define FRAMEHEAD       0xAA
 #define FRAMETAIL       0x55
 
-#define COMM_BUF_SIZE   50
-#define DMA_RX_SIZE     50  // 必须与 main.h 里 UART_RX_BUF_SIZE 一致
+#define COMM_BUF_SIZE   100
+#define DMA_RX_SIZE     100  // 必须与 main.h 里 UART_RX_BUF_SIZE 一致
 
 DataPacket_Struct DataPacket_Type;
 
@@ -109,24 +109,34 @@ static bool TransportUnpacking(TransportFrame_Struct *pframe, uint8_t *buffer, u
     return false;
 }
 
-// 从 DMA 环形缓冲取出新到的字节,放进 pbuf,返回长度
+// 从 DMA 环形缓冲复制所有新到的字节到 pbuf,返回长度
 static bool CommUsart_RecvData(uint8_t *pbuf, uint8_t *plen)
 {
     uint8_t data_cnt = DMA_RX_SIZE - __HAL_DMA_GET_COUNTER(&hdma_uart1);
-    *pbuf = Rxbuffer[recv_offset];
 
-    if (data_cnt < recv_offset)
+    if (data_cnt == recv_offset)
     {
-        *plen = DMA_RX_SIZE - recv_offset;
-        recv_offset = 0;
+        *plen = 0;
+        return false;
+    }
+
+    if (data_cnt > recv_offset)
+    {
+        *plen = data_cnt - recv_offset;
+        memcpy(pbuf, &Rxbuffer[recv_offset], *plen);
     }
     else
     {
-        *plen = data_cnt - recv_offset;
-        recv_offset = data_cnt;
+        // DMA 环形回绕
+        uint8_t len1 = DMA_RX_SIZE - recv_offset;
+        uint8_t len2 = data_cnt;
+        memcpy(pbuf, &Rxbuffer[recv_offset], len1);
+        memcpy(pbuf + len1, Rxbuffer, len2);
+        *plen = len1 + len2;
     }
 
-    return *plen > 0;
+    recv_offset = data_cnt;
+    return true;
 }
 
 static void Parse_Save(const uint8_t *buf)
@@ -134,23 +144,24 @@ static void Parse_Save(const uint8_t *buf)
     DataPacket_Type.PUMP1_EN     = buf_u16_le(buf, 2);
     DataPacket_Type.START1       = buf_u16_le(buf, 4);
     DataPacket_Type.FULL1        = buf_u16_le(buf, 6);
-    DataPacket_Type.START2       = buf_u16_le(buf, 8);
-    DataPacket_Type.FULL2        = buf_u16_le(buf, 10);
-    DataPacket_Type.SPRAYMAIN    = buf_u16_le(buf, 12);
-    DataPacket_Type.RAIN_ONTIME  = buf_u16_le(buf, 14);
-    DataPacket_Type.RAIN_OFFTIME = buf_u16_le(buf, 16);
-    DataPacket_Type.EX_AUTO      = buf_u16_le(buf, 18);
-    DataPacket_Type.EX_SET       = buf_u16_le(buf, 20);
-    DataPacket_Type.EX_DELAY     = buf_u16_le(buf, 22);
-    DataPacket_Type.PUMP_STDUTY  = buf_u16_le(buf, 24);
-    DataPacket_Type.Hz_Mv        = buf_u16_le(buf, 26);
-    DataPacket_Type.LightSen     = buf_u16_le(buf, 28);
-    DataPacket_Type.Bright       = buf_u16_le(buf, 30);
-    DataPacket_Type.FLEX0        = buf_u16_le(buf, 32);
-    DataPacket_Type.FLEX100      = buf_u16_le(buf, 34);
-    DataPacket_Type.FLUID_MAIN   = buf_u16_le(buf, 36);
-    DataPacket_Type.EX_REV       = buf_u16_le(buf, 38);
-    DataPacket_Type.TEMP_UINT    = buf_u16_le(buf, 40);
+    DataPacket_Type.PUMP2_EN     = buf_u16_le(buf, 8);
+    DataPacket_Type.START2       = buf_u16_le(buf, 10);
+    DataPacket_Type.FULL2        = buf_u16_le(buf, 12);
+    DataPacket_Type.SPRAYMAIN    = buf_u16_le(buf, 14);
+    DataPacket_Type.RAIN_ONTIME  = buf_u16_le(buf, 16);
+    DataPacket_Type.RAIN_OFFTIME = buf_u16_le(buf, 18);
+    DataPacket_Type.EX_AUTO      = buf_u16_le(buf, 20);
+    DataPacket_Type.EX_SET       = buf_u16_le(buf, 22);
+    DataPacket_Type.EX_DELAY     = buf_u16_le(buf, 24);
+    DataPacket_Type.PUMP_STDUTY  = buf_u16_le(buf, 26);
+    DataPacket_Type.Hz_Mv        = buf_u16_le(buf, 28);
+    DataPacket_Type.LightSen     = buf_u16_le(buf, 30);
+    DataPacket_Type.Bright       = buf_u16_le(buf, 32);
+    DataPacket_Type.FLEX0        = buf_u16_le(buf, 34);
+    DataPacket_Type.FLEX100      = buf_u16_le(buf, 36);
+    DataPacket_Type.FLUID_MAIN   = buf_u16_le(buf, 38);
+    DataPacket_Type.EX_REV       = buf_u16_le(buf, 40);
+    DataPacket_Type.TEMP_UINT    = buf_u16_le(buf, 42);
 }
 
 static void Parse_FactorySave(const uint8_t *buf)
@@ -167,7 +178,7 @@ static void Parse_FactorySave(const uint8_t *buf)
 
 void Comm_unpack(void)
 {
-    static uint8_t temp[50];
+    static uint8_t temp[100];
     static uint8_t lens = 0;
 
     if (!CommUsart_RecvData(temp, &lens))
@@ -190,7 +201,7 @@ void Comm_unpack(void)
             DataPacket_Type.TEST_SET = buf_u16_le(comm_buffer, 2);
             break;
         case EX_CMD:
-            DataPacket_Type.EX_VAL = buf_u16_le(comm_buffer, 2);
+            DataPacket_Type.EX_VAL = comm_buffer[2];
             break;
         case FACTORY_SAVE_CMD:
             Parse_FactorySave(comm_buffer);
@@ -220,5 +231,6 @@ void MX_USART2_UART_Init(void)
     if (HAL_UART_Init(&huart2) != HAL_OK)
         Error_Handler();
 
-    HAL_UART_Receive_DMA(&huart2, Rxbuffer, UART_RX_BUF_SIZE);
+    if (HAL_UART_Receive_DMA(&huart2, Rxbuffer, UART_RX_BUF_SIZE) != HAL_OK)
+        Error_Handler();
 }

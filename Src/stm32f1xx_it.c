@@ -64,7 +64,7 @@ static uint16_t freq_hz = 0;
 
 extern UART_HandleTypeDef huart2;
 
-extern uint8_t RxBuffer[50];//HAL库使用的串口接收缓冲
+extern uint8_t RxBuffer[100];//HAL库使用的串口接收缓冲
 
 /* USER CODE BEGIN EV */
 
@@ -241,10 +241,17 @@ unsigned short int Get_FreqHz(void)
 {
 		return freq_hz;
 }
-void USART2_IRQHandler(void)     
+void USART2_IRQHandler(void)
 {
-	//HAL_UART_IRQHandler(&huart2);	//调用HAL库中断处理公用函数
-}	
+	//HAL_UART_IRQHandler(&huart2);
+}
+
+extern DMA_HandleTypeDef hdma_uart1;
+
+void DMA1_Channel6_IRQHandler(void)
+{
+    // HAL_DMA_IRQHandler(&hdma_uart1);
+}
 
 
 

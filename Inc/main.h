@@ -31,7 +31,7 @@ extern "C" {
 #include "stm32f1xx_hal.h"
 
 #define SW_VERSION        66
-#define UART_RX_BUF_SIZE  50
+#define UART_RX_BUF_SIZE  100
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 

@@ -17,7 +17,7 @@ extern DataPacket_Struct Show_DataPacketType;
 // MAF 毫伏输入 → 显示值(uint64 防溢出)
 static uint16_t Get_Mv_Maf(void)
 {
-    return (uint16_t)((uint64_t)Show_DataPacketType.MAF_ADJ * 3300U * ADvalue[CH_MAF_MV] / 40950000U);
+    return (uint16_t)(((uint64_t)Show_DataPacketType.MAF_ADJ * 3300U * ADvalue[CH_MAF_MV] * 156) / (40950000U * 100));
 }
 
 // 泵进度:线性映射 [start, full] → [0, 100]
@@ -40,7 +40,7 @@ void GetFreqHz_Task(void)
    b_progress = Show_DataPacketType.PUMP2_EN ?
        Cal_PumpProgress(freq_show, Show_DataPacketType.START2, Show_DataPacketType.FULL2) : 0;
 
-    printf("mafValueShow.txt=\"%d\"\xff\xff\xff", freq_show);
+    printf("mafValueShow.txt=\"%d\"\xff\xff\xff", HAL_GetTick()%10000);
 }
 
 uint8_t Get_A_PumpProgress(void)

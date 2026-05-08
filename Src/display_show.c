@@ -14,6 +14,7 @@
 #define PIC_OFF        8
 #define PIC_ON         9
 
+
 #define NEX_VAL(name, v)       do { printf("name.val=%d\xff\xff\xff", (int)(v));          HAL_Delay(10); } while (0)
 #define NEX_TXT(name, t)       do { printf("name.txt=\"%s\"\xff\xff\xff", (t));           HAL_Delay(10); } while (0)
 #define NEX_TXT_INT(name, v)   do { printf("name.txt=\"%d\"\xff\xff\xff", (int)(v));      HAL_Delay(10); } while (0)
@@ -30,9 +31,19 @@ static uint8_t Mode = NORMAL_MODE;
 /*------------------------------------------------------------------------------
  * Flash / 初始化
  *----------------------------------------------------------------------------*/
+static void apply_adj_defaults(DataPacket_Struct *p)
+{
+    if (p->MAF_ADJ == 0xFFFF) p->MAF_ADJ = 10000;
+    if (p->ETH_ADJ == 0xFFFF) p->ETH_ADJ = 10000;
+    if (p->AFR_ADJ == 0xFFFF) p->AFR_ADJ = 10000;
+    if (p->DAC1_ADJ == 0xFFFF) p->DAC1_ADJ = 10000;
+    if (p->DAC2_ADJ == 0xFFFF) p->DAC2_ADJ = 10000;
+}
+
 void Flash_Init(void)
 {
     Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(Show_DataPacketType));
+    apply_adj_defaults(&Show_DataPacketType);
     memcpy(&DataPacket_Type, &Show_DataPacketType, sizeof(DataPacket_Struct));
 }
 
@@ -231,6 +242,7 @@ void Display_BackgroundSetting(void)
  *----------------------------------------------------------------------------*/
 #define BAT_ADC_HIGH    3500    // 电瓶过压 ADC 阈值,需根据实际分压校准
 #define BAT_ADC_LOW     2400    // 电瓶欠压 ADC 阈值
+#define LIQUID_LOW      2600
 
 static const char * const warn_icons[] = {"FluidIco", "hiIco", "lowIco"};
 static uint8_t  warn_shown = 0xFF;
@@ -249,7 +261,7 @@ void Display_Warning(void)
     uint8_t count = 0;
 
     if (Show_DataPacketType.FLUID_MAIN != 0 &&
-        AD_LIQUID_LVL < Show_DataPacketType.LEVEL1_VAL)
+        AD_LIQUID_LVL < LIQUID_LOW)
         active[count++] = 0;
 
     if (AD_BAT_VOLT > BAT_ADC_HIGH)
@@ -314,6 +326,7 @@ void Refresh_Setting(void)
         Display_StartPage();
         break;
     case PAGESETTING_CMD:
+				SetMode(SETTING_MODE);
         Display_SettingPage();
         break;
     case FACTORY_MODE_CMD:
