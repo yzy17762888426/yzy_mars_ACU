@@ -1,6 +1,9 @@
 #include "flex.h"
 #include "main.h"
 #include "display_comm.h"
+#include <stdio.h>
+
+#define NEX_END  "\xff\xff\xff"
 
 /*------------------------------------------------------------------------------
  * PA1 Flex Fuel Sensor 信号采样 — SysTick 1ms 调用,10s 窗口
@@ -133,4 +136,19 @@ void Flex_DAC_Out(void)
 
     Set_DAC1((uint16_t)dac1);
 //    Set_DAC2((uint16_t)dac2);
+
+    // 乙醇含量显示 (0.1% → X.X%)
+    uint16_t eth_show = Get_Flex_Ethanol();
+    printf("eValueShow.txt=\"%d.%d\"" NEX_END, eth_show / 10, eth_show % 10);
+    HAL_Delay(10);
+
+    // 乙醇温度显示 (0.1°C 单位, TEMP_UINT=0→℃ 1→℉)
+    int16_t temp = Get_Flex_Temp_x10();
+    if (!Show_DataPacketType.TEMP_UINT)
+        temp = (int16_t)((int32_t)temp * 18 / 10 + 320);
+    if (temp >= 0)
+        printf("tValueShow.txt=\"%d.%d\"" NEX_END, temp / 10, temp % 10);
+    else
+        printf("tValueShow.txt=\"-%d.%d\"" NEX_END, (-temp) / 10, (-temp) % 10);
+    HAL_Delay(10);
 }

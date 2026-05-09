@@ -1,6 +1,12 @@
 #include "exhaust.h"
 #include "display_comm.h"
 #include "get_maf.h"
+#include <stdio.h>
+
+#define NEX_END         "\xff\xff\xff"
+#define NEX_PIC(name,p) do { printf(name ".pic=%d" NEX_END, (int)(p)); HAL_Delay(10); } while(0)
+#define PIC_ON          9
+#define PIC_OFF         8
 
 extern DataPacket_Struct Show_DataPacketType;
 
@@ -78,4 +84,7 @@ void ExhaustValve_Task(void)
     }
 
     Ex_WritePin(valve_open);
+
+    // 状态灯: EX_VAL=1 → pic=9, 否则 pic=8
+    NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
 }

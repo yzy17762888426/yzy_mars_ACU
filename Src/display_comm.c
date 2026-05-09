@@ -199,7 +199,7 @@ void Comm_unpack(void)
             Parse_Save(comm_buffer);
             break;
         case TEST_CMD:
-            DataPacket_Type.TEST_SET = (comm_buffer[2] << 8) | comm_buffer[3];
+            DataPacket_Type.TEST_SET = (comm_buffer[3] << 8) | comm_buffer[2];
             test_en = comm_buffer[4];
             break;
         case EX_CMD:

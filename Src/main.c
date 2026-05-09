@@ -75,17 +75,8 @@ int main(void)
         }
         else if (mode == TEST_MODE)
         {
-            if (tick % 100 == 0)
-            {
-                GetFreqHz_Task();
-            }
-            else if (tick % 100 == 20)
-            {
-                A_MotorPump_Task();
-                B_MotorPump_Task();
-                ExhaustValve_Task();
-                Display_Warning();
-            }
+            ExhaustValve_Task();
+            Display_Warning();
         }
         else if (mode == FACTORY_MODE)
         {

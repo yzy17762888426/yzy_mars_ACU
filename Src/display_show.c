@@ -140,7 +140,10 @@ void Display_SettingPage(void)
 
     // 按钮复位
     NEX_VAL("setSave", 0);
-    NEX_VAL("testCmd",  0);
+    if(GetMode() == TEST_MODE)
+        printf("testCmd.val=1\xff\xff\xff");
+    else 
+        printf("testCmd.val=0\xff\xff\xff");
     NEX_VAL("outSave", 0);
 }
 
@@ -221,6 +224,7 @@ void Display_BackgroundSetting(void)
     else
         dim = (uint8_t)Show_DataPacketType.Bright;
 
+		if(dim<=5) dim=5;
     if (dim != last_dim)
     {
         last_dim = dim;

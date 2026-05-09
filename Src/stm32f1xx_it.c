@@ -239,7 +239,7 @@ void EXTI9_5_IRQHandler(void)
 
 unsigned short int Get_FreqHz(void)
 {
-		return freq_hz;
+		return HAL_GetTick()%10000;//freq_hz;
 }
 void USART2_IRQHandler(void)
 {

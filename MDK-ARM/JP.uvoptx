@@ -125,7 +125,7 @@
         <SetRegEntry>
           <Number>0</Number>
           <Key>CMSIS_AGDI</Key>
-          <Name>-X"Any" -UAny -O206 -S0 -C0 -P00000000 -N00("ARM CoreSight SW-DP") -D00(1BA01477) -L00(0) -TO65554 -TC10000000 -TT10000000 -TP20 -TDS8004 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO23 -FD20000000 -FC1000 -FN1 -FF0STM32F10x_512.FLM -FS08000000 -FL080000 -FP0($$Device:STM32F103RC$Flash\STM32F10x_512.FLM)</Name>
+          <Name>-X"Any" -UAny -O206 -S0 -C0 -P00000000 -N00("ARM CoreSight SW-DP") -D00(1BA01477) -L00(0) -TO65554 -TC10000000 -TT10000000 -TP20 -TDS8004 -TDT0 -TDC1F -TIEFFFFFFFF -TIP8 -FO7 -FD20000000 -FC1000 -FN1 -FF0STM32F10x_512.FLM -FS08000000 -FL080000 -FP0($$Device:STM32F103RC$Flash\STM32F10x_512.FLM)</Name>
         </SetRegEntry>
         <SetRegEntry>
           <Number>0</Number>
@@ -383,7 +383,7 @@
         <Ww>
           <count>46</count>
           <WinNumber>1</WinNumber>
-          <ItemText>Show_DataPacketType,0x10</ItemText>
+          <ItemText>Show_DataPacketType,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>47</count>
@@ -424,6 +424,46 @@
           <count>54</count>
           <WinNumber>1</WinNumber>
           <ItemText>comm_buffer</ItemText>
+        </Ww>
+        <Ww>
+          <count>55</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>dim</ItemText>
+        </Ww>
+        <Ww>
+          <count>56</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>a_progress,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>57</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>b_progress,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>58</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>TIM2</ItemText>
+        </Ww>
+        <Ww>
+          <count>59</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>duty,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>60</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>pump_a,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>61</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>test_en</ItemText>
+        </Ww>
+        <Ww>
+          <count>62</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>mode</ItemText>
         </Ww>
       </WatchWindow1>
       <MemoryWindow1>

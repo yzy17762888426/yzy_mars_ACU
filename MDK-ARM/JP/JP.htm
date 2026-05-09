@@ -3,7 +3,7 @@
 <title>Static Call Graph - [JP\JP.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image JP\JP.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Fri May  8 22:42:48 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Sat May  9 17:21:06 2026
 <BR><P>
 <H3>Maximum Stack Usage =        236 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -412,7 +412,7 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f103xe.o(RESET)
 </UL>
-<P><STRONG><a name="[61]"></a>Comm_unpack</STRONG> (Thumb, 898 bytes, Stack size 40 bytes, display_comm.o(.text.Comm_unpack))
+<P><STRONG><a name="[61]"></a>Comm_unpack</STRONG> (Thumb, 894 bytes, Stack size 40 bytes, display_comm.o(.text.Comm_unpack))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = Comm_unpack
 </UL>
 <BR>[Calls]<UL><LI><a href="#[62]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
@@ -433,7 +433,7 @@ Global Symbols
 <P><STRONG><a name="[7]"></a>DebugMon_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32f1xx_it.o(.text.DebugMon_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f103xe.o(RESET)
 </UL>
-<P><STRONG><a name="[64]"></a>Display_BackgroundSetting</STRONG> (Thumb, 96 bytes, Stack size 8 bytes, display_show.o(.text.Display_BackgroundSetting))
+<P><STRONG><a name="[64]"></a>Display_BackgroundSetting</STRONG> (Thumb, 100 bytes, Stack size 8 bytes, display_show.o(.text.Display_BackgroundSetting))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = Display_BackgroundSetting &rArr; __2printf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
@@ -453,7 +453,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[68]"></a>Display_SettingPage</STRONG> (Thumb, 672 bytes, Stack size 8 bytes, display_show.o(.text.Display_SettingPage))
+<P><STRONG><a name="[68]"></a>Display_SettingPage</STRONG> (Thumb, 680 bytes, Stack size 8 bytes, display_show.o(.text.Display_SettingPage))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = Display_SettingPage &rArr; __2printf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
@@ -493,12 +493,14 @@ Global Symbols
 <LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MX_ADC1_Init
 </UL>
 
-<P><STRONG><a name="[6b]"></a>ExhaustValve_Task</STRONG> (Thumb, 122 bytes, Stack size 16 bytes, exhaust.o(.text.ExhaustValve_Task))
-<BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = ExhaustValve_Task
+<P><STRONG><a name="[6b]"></a>ExhaustValve_Task</STRONG> (Thumb, 164 bytes, Stack size 16 bytes, exhaust.o(.text.ExhaustValve_Task))
+<BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = ExhaustValve_Task &rArr; __2printf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[6c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetFreqShow
 <LI><a href="#[57]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 <LI><a href="#[6d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GPIO_WritePin
+<LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
+<LI><a href="#[65]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
@@ -553,12 +555,11 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Refresh_Setting
 </UL>
 
-<P><STRONG><a name="[75]"></a>GetFreqHz_Task</STRONG> (Thumb, 232 bytes, Stack size 16 bytes, get_maf.o(.text.GetFreqHz_Task))
+<P><STRONG><a name="[75]"></a>GetFreqHz_Task</STRONG> (Thumb, 208 bytes, Stack size 16 bytes, get_maf.o(.text.GetFreqHz_Task))
 <BR><BR>[Stack]<UL><LI>Max Depth = 56<LI>Call Chain = GetFreqHz_Task &rArr; __aeabi_uldivmod
 </UL>
 <BR>[Calls]<UL><LI><a href="#[77]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetTestData
 <LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Get_FreqHz
-<LI><a href="#[57]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 <LI><a href="#[76]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetMode
 <LI><a href="#[65]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 <LI><a href="#[52]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_uldivmod
@@ -587,8 +588,12 @@ Global Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[5f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;B_MotorPump_Task
 </UL>
 
-<P><STRONG><a name="[78]"></a>Get_FreqHz</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, stm32f1xx_it.o(.text.Get_FreqHz))
-<BR><BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetFreqHz_Task
+<P><STRONG><a name="[78]"></a>Get_FreqHz</STRONG> (Thumb, 30 bytes, Stack size 8 bytes, stm32f1xx_it.o(.text.Get_FreqHz))
+<BR><BR>[Stack]<UL><LI>Max Depth = 8<LI>Call Chain = Get_FreqHz
+</UL>
+<BR>[Calls]<UL><LI><a href="#[57]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
+</UL>
+<BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetFreqHz_Task
 </UL>
 
 <P><STRONG><a name="[79]"></a>HAL_ADCEx_Calibration_Start</STRONG> (Thumb, 276 bytes, Stack size 24 bytes, stm32f1xx_hal_adc_ex.o(.text.HAL_ADCEx_Calibration_Start))
@@ -710,6 +715,7 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[57]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 </UL>
 <BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Refresh_Setting
+<LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ExhaustValve_Task
 <LI><a href="#[6a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_Warning
 <LI><a href="#[69]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_StartPage
 <LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_FactoryPage
@@ -757,12 +763,12 @@ Global Symbols
 <P><STRONG><a name="[57]"></a>HAL_GetTick</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, stm32f1xx_hal.o(.text.HAL_GetTick))
 <BR><BR>[Called By]<UL><LI><a href="#[7b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_ADC_Init
 <LI><a href="#[79]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_ADCEx_Calibration_Start
+<LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Get_FreqHz
 <LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_Transmit
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_OscConfig
 <LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_ClockConfig
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCCEx_PeriphCLKConfig
-<LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetFreqHz_Task
 <LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ExhaustValve_Task
 <LI><a href="#[6a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_Warning
 <LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_FactoryPage
@@ -1107,7 +1113,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Refresh_Setting
 </UL>
 
-<P><STRONG><a name="[9]"></a>SysTick_Handler</STRONG> (Thumb, 62 bytes, Stack size 8 bytes, stm32f1xx_it.o(.text.SysTick_Handler))
+<P><STRONG><a name="[9]"></a>SysTick_Handler</STRONG> (Thumb, 36 bytes, Stack size 8 bytes, stm32f1xx_it.o(.text.SysTick_Handler))
 <BR><BR>[Stack]<UL><LI>Max Depth = 16<LI>Call Chain = SysTick_Handler &rArr; PA1_Sample
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PA1_Sample
@@ -1135,7 +1141,7 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> printf3.o(i.__0printf$3)
 </UL>
-<P><STRONG><a name="[46]"></a>main</STRONG> (Thumb, 368 bytes, Stack size 88 bytes, main.o(.text.main))
+<P><STRONG><a name="[46]"></a>main</STRONG> (Thumb, 366 bytes, Stack size 88 bytes, main.o(.text.main))
 <BR><BR>[Stack]<UL><LI>Max Depth = 236<LI>Call Chain = main &rArr; MX_ADC1_Init &rArr; HAL_ADC_Init &rArr; HAL_ADC_MspInit &rArr; HAL_GPIO_Init
 </UL>
 <BR>[Calls]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Refresh_Setting
@@ -1177,6 +1183,7 @@ Global Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 24<LI>Call Chain = __2printf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[75]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;GetFreqHz_Task
+<LI><a href="#[6b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ExhaustValve_Task
 <LI><a href="#[6a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_Warning
 <LI><a href="#[69]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_StartPage
 <LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Display_FactoryPage
@@ -1198,7 +1205,7 @@ Local Symbols
 <BR><BR>[Called By]<UL><LI><a href="#[a7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Refresh_Setting
 </UL>
 
-<P><STRONG><a name="[5e]"></a>MotorPump_Update</STRONG> (Thumb, 204 bytes, Stack size 16 bytes, pump.o(.text.MotorPump_Update))
+<P><STRONG><a name="[5e]"></a>MotorPump_Update</STRONG> (Thumb, 208 bytes, Stack size 16 bytes, pump.o(.text.MotorPump_Update))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = MotorPump_Update &rArr; __2printf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[57]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick

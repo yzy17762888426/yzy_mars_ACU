@@ -59,7 +59,7 @@ static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, con
         *ctx->ccr_b = 0;
     }
 
-    printf("%s.val=%d\xff\xff\xff", name, (*ctx->ccr_a + *ctx->ccr_b) / (PUMP_DUTY_KICK * 2));
+    printf("%s.val=%d\xff\xff\xff", name, (*ctx->ccr_a + *ctx->ccr_b) * 100 / (PUMP_DUTY_KICK * 2));
 }
 
 void A_MotorPump_Task(void)
