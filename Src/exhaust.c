@@ -15,9 +15,9 @@ extern DataPacket_Struct Show_DataPacketType;
 #define EX_PIN          GPIO_PIN_14
 
 /* 阀门状态 */
-static uint8_t  valve_open = 0;
-static uint8_t  close_delay_active = 0;
-static uint32_t close_delay_start  = 0;
+static volatile uint8_t  valve_open = 0;
+static volatile uint8_t  close_delay_active = 0;
+static volatile uint32_t close_delay_start  = 0;
 
 static void Ex_WritePin(uint8_t open)
 {

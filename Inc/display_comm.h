@@ -17,8 +17,9 @@
 #define TEST_CMD            0xF30C  // 测试模式
 #define PAGESETTING_CMD     0xF40D  // 进入设置页
 #define EX_CMD              0xF60F  // 排气阀手动控制
-#define FACTORY_MODE_CMD    0xF912  // 进入出厂模式
+#define SPRAY_CMD           0xF710  // 喷淋手动控制
 #define FACTORY_SAVE_CMD    0xF811  // 出厂模式保存
+#define FACTORY_MODE_CMD    0xF912  // 进入出厂模式
 
 // MAF 显示模式(Hz_Mv 字段使用)
 #define HZ_MODE             0x00    // 频率模式

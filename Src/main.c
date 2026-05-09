@@ -7,6 +7,7 @@
 #include "display_comm.h"
 #include "flex.h"
 #include "exhaust.h"
+#include "spray.h"
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
@@ -27,8 +28,8 @@ static void MX_GPIO_Init(void);
  *----------------------------------------------------------------------------*/
 int fputc(int ch, FILE *f)
 {
-    uint8_t temp[1] = {ch};
-    HAL_UART_Transmit(&huart2, temp, 1, HAL_MAX_DELAY);
+    while (!(USART2->SR & USART_SR_TXE)) {}
+    USART2->DR = (uint8_t)ch;
     return ch;
 }
 
@@ -37,6 +38,7 @@ int fputc(int ch, FILE *f)
  *----------------------------------------------------------------------------*/
 int main(void)
 {
+		USER_FlashReadProtection(0);
     HAL_Init();
     SystemClock_Config();
 
@@ -49,6 +51,7 @@ int main(void)
     Flash_Init();
 
     Exhaust_Init();
+    Spray_Init();
 
     InitCommBuffer();
     Display_StartPage();
@@ -58,7 +61,7 @@ int main(void)
         uint8_t  mode = GetMode();
         uint32_t tick = HAL_GetTick();
 
-        if (mode == NORMAL_MODE)
+        if (mode == NORMAL_MODE || mode == TEST_MODE)
         {
             if (tick % 100 == 0)
             {
@@ -70,13 +73,15 @@ int main(void)
                 A_MotorPump_Task();
                 B_MotorPump_Task();
                 ExhaustValve_Task();
-                Display_Warning();
             }
-        }
-        else if (mode == TEST_MODE)
-        {
-            ExhaustValve_Task();
-            Display_Warning();
+            else if (tick % 100 == 30)
+            {
+                Spray_Task();
+            }
+            else if (tick % 1000 == 999)
+            {
+                Display_Warning(); 
+            }
         }
         else if (mode == FACTORY_MODE)
         {

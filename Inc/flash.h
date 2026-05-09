@@ -10,7 +10,7 @@
 #define STM32_FLASH_SIZE 	256 	 		//所选STM32的FLASH容量大小(单位为K)
 #define STM32_FLASH_WREN 	1              	//使能FLASH写入(0，不是能;1，使能)
 #define FLASH_WAITETIME  	50000          	//FLASH等待超时时间
-#define FLASH_SAVE_ADDR  0x08010000 	//设置FLASH 保存地址(必须为偶数，且其值要大于本代码所占用FLASH的大小+0X08000000)
+#define FLASH_SAVE_ADDR  0x0803F800 	//设置FLASH 保存地址(必须为偶数，且其值要大于本代码所占用FLASH的大小+0X08000000)
 
 //FLASH起始地址
 #define STM32_FLASH_BASE 0x08000000 		//STM32 FLASH的起始地址

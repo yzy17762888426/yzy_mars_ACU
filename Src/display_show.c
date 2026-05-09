@@ -52,7 +52,7 @@ void Flash_Init(void)
  *----------------------------------------------------------------------------*/
 void Display_StartPage(void)
 {
-    NEX_PAGE("page0", 500);
+    NEX_PAGE("page0", 50);
 
     // 起跳 / 满量
     NEX_TXT_INT("startValueShow",  Show_DataPacketType.START1);
@@ -72,7 +72,7 @@ void Display_StartPage(void)
 
     // 排气模式 / 单位
     NEX_TXT("valueStaus", Show_DataPacketType.EX_AUTO ? "AT" : "MT");
-    NEX_TXT("unit",       Show_DataPacketType.Hz_Mv   ? "MV" : "Hz");
+    NEX_TXT("unit",       Show_DataPacketType.Hz_Mv   ? "mV" : "Hz");
 
     // 泵占空比(0~100%)
     NEX_VAL("pump1", (TIM2->CCR3 + TIM2->CCR4) / 19);
@@ -80,6 +80,9 @@ void Display_StartPage(void)
 
     // 测试图标
     NEX_VIS("testIco", GetMode() == TEST_MODE);
+
+    if(GetMode() == TEST_MODE)
+        printf("mafValueShow.txt=\"%d\"\xff\xff\xff", GetTestData());
 
     // 告警图标初始隐藏
     NEX_VIS("FluidIco", 0);
@@ -92,7 +95,7 @@ void Display_StartPage(void)
  *----------------------------------------------------------------------------*/
 void Display_SettingPage(void)
 {
-    NEX_PAGE("page1", 500);
+    NEX_PAGE("page1", 50);
 
     // 泵 A
     NEX_VAL("STA1",        Show_DataPacketType.START1);
@@ -105,7 +108,7 @@ void Display_SettingPage(void)
     NEX_VAL("pumpEnable2", Show_DataPacketType.PUMP2_EN ? 1 : 0);
 
     // 喷淋
-    NEX_VAL("sprayMain",   Show_DataPacketType.SPRAYMAIN ? 1 : 0);
+    NEX_VAL("spraymain",   Show_DataPacketType.SPRAYMAIN ? 1 : 0);
     NEX_VAL("rainOnTime",  Show_DataPacketType.RAIN_ONTIME);
     NEX_VAL("rainOffTime", Show_DataPacketType.RAIN_OFFTIME);
 
@@ -140,10 +143,11 @@ void Display_SettingPage(void)
 
     // 按钮复位
     NEX_VAL("setSave", 0);
-    if(GetMode() == TEST_MODE)
+    if(test_en)
         printf("testCmd.val=1\xff\xff\xff");
-    else 
+    else
         printf("testCmd.val=0\xff\xff\xff");
+    HAL_Delay(10);
     NEX_VAL("outSave", 0);
 }
 
@@ -316,7 +320,7 @@ static void TestPump_SetDuty(__IO uint32_t *ccr_a, __IO uint32_t *ccr_b,
     }
     else if (val >= start && full > start)
     {
-        uint32_t base = (uint32_t)Show_DataPacketType.PUMP_STDUTY * 10;
+        uint32_t base = (uint32_t)Show_DataPacketType.PUMP_STDUTY * 950 / 100;
         uint32_t d = base + (val - start) * (950 - base) / (full - start);
         *ccr_a = d;
         *ccr_b = d;
@@ -354,15 +358,6 @@ void Refresh_Setting(void)
     if (memcmp(&DataPacket_Type, &Show_DataPacketType, sizeof(DataPacket_Struct)) != 0)
     {
         Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
-
-        // Hz/Mv 模式切换需要重启
-        if (DataPacket_Type.Hz_Mv != Show_DataPacketType.Hz_Mv)
-        {
-            HAL_Delay(500);
-            __set_FAULTMASK(1);
-            NVIC_SystemReset();
-        }
-
         Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
     }
 
@@ -380,7 +375,6 @@ void Refresh_Setting(void)
         Display_SettingPage();
         break;
     case TEST_CMD:
-        SetMode(test_en ? TEST_MODE : NORMAL_MODE);
         if (test_en)
             TestPumpOutput();
         break;

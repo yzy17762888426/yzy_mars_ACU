@@ -31,6 +31,7 @@ static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, con
         *ctx->ccr_a    = 0;
         *ctx->ccr_b    = 0;
         printf("%s.val=0\xff\xff\xff", name);
+        HAL_Delay(10);
         return;
     }
 
@@ -44,8 +45,7 @@ static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, con
         else
         {
             ctx->kicking = 0;
-            // base: PUMP_STDUTY(0~100%) → CCR(0~1000)
-            uint32_t base = (uint32_t)Show_DataPacketType.PUMP_STDUTY * 10;
+            uint32_t base = (uint32_t)Show_DataPacketType.PUMP_STDUTY * PUMP_DUTY_MAX / 100;
             uint32_t duty = base + (uint32_t)progress * (PUMP_DUTY_MAX - base) / 100;
             *ctx->ccr_a = duty;
             *ctx->ccr_b = duty;
@@ -60,16 +60,30 @@ static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, con
     }
 
     printf("%s.val=%d\xff\xff\xff", name, (*ctx->ccr_a + *ctx->ccr_b) * 100 / (PUMP_DUTY_KICK * 2));
+    HAL_Delay(10);
+}
+
+// 泵进度:线性映射 [start, full] → [0, 100], freq>start 时保底为 1
+static uint8_t Cal_PumpProgress(uint16_t freq, uint16_t start, uint16_t full)
+{
+    if (freq <= start) return 0;
+    if (freq >= full)  return 100;
+    uint8_t p = (uint8_t)((freq - start) * 100 / (full - start));
+    return p == 0 ? 1 : p;
 }
 
 void A_MotorPump_Task(void)
 {
-    MotorPump_Update(&pump_a, Show_DataPacketType.PUMP1_EN, Get_A_PumpProgress(), "pump1");
+    uint8_t progress = Show_DataPacketType.PUMP1_EN ?
+        Cal_PumpProgress(GetFreqShow(), Show_DataPacketType.START1, Show_DataPacketType.FULL1) : 0;
+    MotorPump_Update(&pump_a, Show_DataPacketType.PUMP1_EN, progress, "pump1");
 }
 
 void B_MotorPump_Task(void)
 {
-    MotorPump_Update(&pump_b, Show_DataPacketType.PUMP2_EN, Get_B_PumpProgress(), "pump2");
+    uint8_t progress = Show_DataPacketType.PUMP2_EN ?
+        Cal_PumpProgress(GetFreqShow(), Show_DataPacketType.START2, Show_DataPacketType.FULL2) : 0;
+    MotorPump_Update(&pump_b, Show_DataPacketType.PUMP2_EN, progress, "pump2");
 }
 
 /*------------------------------------------------------------------------------

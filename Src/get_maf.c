@@ -9,23 +9,12 @@ extern ADC_HandleTypeDef hadc1;
 extern DMA_HandleTypeDef hdma_adc1;
 
 static uint16_t freq_show = 0;
-static uint8_t  a_progress = 0;
-static uint8_t  b_progress = 0;
-
 extern DataPacket_Struct Show_DataPacketType;
 
 // MAF 毫伏输入 → 显示值(uint64 防溢出)
 static uint16_t Get_Mv_Maf(void)
 {
     return (uint16_t)(((uint64_t)Show_DataPacketType.MAF_ADJ * 3300U * ADvalue[CH_MAF_MV] * 156) / (40950000U * 100));
-}
-
-// 泵进度:线性映射 [start, full] → [0, 100]
-static uint8_t Cal_PumpProgress(uint16_t freq, uint16_t start, uint16_t full)
-{
-    if (freq <= start) return 0;
-    if (freq >= full)  return 100;
-    return (uint8_t)((freq - start) * 100 / (full - start));
 }
 
 void GetFreqHz_Task(void)
@@ -35,22 +24,8 @@ void GetFreqHz_Task(void)
     else if (GetMode() == TEST_MODE)
         freq_show = GetTestData();
 
-   a_progress = Show_DataPacketType.PUMP1_EN ?
-       Cal_PumpProgress(freq_show, Show_DataPacketType.START1, Show_DataPacketType.FULL1) : 0;
-   b_progress = Show_DataPacketType.PUMP2_EN ?
-       Cal_PumpProgress(freq_show, Show_DataPacketType.START2, Show_DataPacketType.FULL2) : 0;
-
     printf("mafValueShow.txt=\"%d\"\xff\xff\xff", freq_show);
-}
-
-uint8_t Get_A_PumpProgress(void)
-{
-    return a_progress;
-}
-
-uint8_t Get_B_PumpProgress(void)
-{
-    return b_progress;
+    HAL_Delay(10);
 }
 
 uint16_t GetFreqShow(void)

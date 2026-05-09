@@ -29,6 +29,7 @@ static inline uint16_t buf_u16_le(const uint8_t *buf, uint8_t idx)
 void InitCommBuffer(void)
 {
     recv_offset = 0;
+    HAL_Delay(4000);
 }
 
 uint16_t GetDisplay_Cmd(void)
@@ -203,7 +204,10 @@ void Comm_unpack(void)
             test_en = comm_buffer[4];
             break;
         case EX_CMD:
-            DataPacket_Type.EX_VAL = comm_buffer[2];
+            DataPacket_Type.EX_VAL = comm_buffer[2] ? 1 : 0;
+            break;
+        case SPRAY_CMD:
+            DataPacket_Type.SPRAYMAIN = comm_buffer[2] ? 1 : 0;
             break;
         case FACTORY_SAVE_CMD:
             Parse_FactorySave(comm_buffer);
@@ -232,6 +236,9 @@ void MX_USART2_UART_Init(void)
     huart2.Init.OverSampling = UART_OVERSAMPLING_16;
     if (HAL_UART_Init(&huart2) != HAL_OK)
         Error_Handler();
+
+    // 清除 UART 错误标志(ORE/FE/NE),防止首次开机残留错误状态
+    __HAL_UART_CLEAR_OREFLAG(&huart2);
 
     if (HAL_UART_Receive_DMA(&huart2, Rxbuffer, UART_RX_BUF_SIZE) != HAL_OK)
         Error_Handler();

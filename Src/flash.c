@@ -107,7 +107,22 @@ void Flash_ReadSetting(uint16_t* WriteData,uint16_t DataLens)
 }
 
 
-
+void USER_FlashReadProtection(uint8_t en)
+{
+    FLASH_OBProgramInitTypeDef fob;
+    uint8_t RDP_L = en ? OB_RDP_LEVEL_1 : OB_RDP_LEVEL_0;
+    
+    HAL_FLASHEx_OBGetConfig(&fob);
+    fob.OptionType = OPTIONBYTE_RDP;
+    if(fob.RDPLevel != RDP_L)
+    {
+        fob.RDPLevel = RDP_L;
+        HAL_FLASH_Unlock();
+        HAL_FLASH_OB_Unlock();
+        HAL_FLASHEx_OBProgram(&fob);
+        HAL_FLASH_OB_Launch();
+    }
+}
 
 
 

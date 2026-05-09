@@ -10,6 +10,7 @@
 "jp\flash.o"
 "jp\flex.o"
 "jp\exhaust.o"
+"jp\spray.o"
 "jp\stm32f1xx_hal_gpio_ex.o"
 "jp\stm32f1xx_hal_adc.o"
 "jp\stm32f1xx_hal_adc_ex.o"
