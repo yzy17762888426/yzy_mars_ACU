@@ -8,6 +8,7 @@
 #include "flex.h"
 #include "exhaust.h"
 #include "spray.h"
+#include "log.h"
 
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
@@ -66,6 +67,7 @@ int main(void)
             if (tick % 100 == 0)
             {
                 GetFreqHz_Task();
+								Log_Task();
       //          Flex_DAC_Out();
             }
             else if (tick % 100 == 20)

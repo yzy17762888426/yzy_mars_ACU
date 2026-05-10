@@ -255,6 +255,7 @@ static uint32_t warn_tick  = 0;
 
 void Display_Warning(void)
 {
+    if (log_en) return;
     uint32_t now = HAL_GetTick();
     if (now - warn_tick < 1000)
         return;

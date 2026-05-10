@@ -85,6 +85,7 @@ void ExhaustValve_Task(void)
 
     Ex_WritePin(valve_open);
 
-    // 状态灯: EX_VAL=1 → pic=9, 否则 pic=8
-    NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
+    // 状态灯: EX_VAL=1 → pic=9, 否则 pic=8 (log期间不发)
+    if (!log_en)
+        NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
 }

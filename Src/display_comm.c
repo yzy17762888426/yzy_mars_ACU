@@ -12,6 +12,7 @@ extern UART_HandleTypeDef huart2;
 
 DataPacket_Struct DataPacket_Type;
 uint8_t test_en = 0;     // TEST_CMD payload[4]: 1=进入 test, 0=退出 test
+uint8_t log_en  = 0;     // LOG_START_CMD=1, LOG_STOP_CMD=0
 
 static TransportFrame_Struct TransportFrame_Type;
 static uint16_t display_cmd = 0;
@@ -211,6 +212,12 @@ void Comm_unpack(void)
             break;
         case FACTORY_SAVE_CMD:
             Parse_FactorySave(comm_buffer);
+            break;
+        case LOG_START_CMD:
+            log_en = 1;
+            break;
+        case LOG_STOP_CMD:
+            log_en = 0;
             break;
         case BACK_CMD:
         case PAGESETTING_CMD:

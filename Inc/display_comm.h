@@ -20,6 +20,8 @@
 #define SPRAY_CMD           0xF710  // 喷淋手动控制
 #define FACTORY_SAVE_CMD    0xF811  // 出厂模式保存
 #define FACTORY_MODE_CMD    0xF912  // 进入出厂模式
+#define LOG_START_CMD       0xFA13  // 启动 LOG 记录
+#define LOG_STOP_CMD        0xFB14  // 停止 LOG 记录
 
 // MAF 显示模式(Hz_Mv 字段使用)
 #define HZ_MODE             0x00    // 频率模式
@@ -104,5 +106,6 @@ uint16_t GetDisplay_Cmd(void);      // 返回最近一次解出的命令字
 
 extern DataPacket_Struct DataPacket_Type;
 extern uint8_t test_en;     // TEST_CMD payload[4]: 1=进入 test, 0=退出 test
+extern uint8_t log_en;      // 1=LOG 记录中, 0=停止
 
 #endif

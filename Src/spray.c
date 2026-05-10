@@ -39,7 +39,7 @@ void Spray_Task(void)
         spray_on  = 0;
         last_main = 0;
         HAL_GPIO_WritePin(SPRAY_PORT, SPRAY_PIN, GPIO_PIN_RESET);
-        NEX_PIC("RainStat", PIC_OFF);
+        if (!log_en) NEX_PIC("RainStat", PIC_OFF);
         return;
     }
 
@@ -52,7 +52,7 @@ void Spray_Task(void)
         spray_on    = 1;
         state_start = now;
         HAL_GPIO_WritePin(SPRAY_PORT, SPRAY_PIN, GPIO_PIN_SET);
-        NEX_PIC("RainStat", PIC_ON);
+        if (!log_en) NEX_PIC("RainStat", PIC_ON);
         return;
     }
 
