@@ -19,8 +19,15 @@ static uint16_t display_cmd = 0;
 static uint8_t  comm_buffer[COMM_BUF_SIZE];
 static uint8_t  recv_offset = 0;
 
+static TransportFrame_Struct EspFrame_Type;
+static uint16_t esp_cmd = 0;
+static uint8_t  esp_buffer[COMM_BUF_SIZE];
+static uint8_t  esp_recv_offset = 0;
+
 extern DMA_HandleTypeDef hdma_uart1;
+extern DMA_HandleTypeDef hdma_usart3_rx;
 extern uint8_t Rxbuffer[];
+extern uint8_t Esp_Rxbuffer[];
 
 static inline uint16_t buf_u16_le(const uint8_t *buf, uint8_t idx)
 {
@@ -212,6 +219,85 @@ void Comm_unpack(void)
             break;
         case FACTORY_SAVE_CMD:
             Parse_FactorySave(comm_buffer);
+            break;
+        case LOG_START_CMD:
+            log_en = 1;
+            break;
+        case LOG_STOP_CMD:
+            log_en = 0;
+            break;
+        case BACK_CMD:
+        case PAGESETTING_CMD:
+        case FACTORY_MODE_CMD:
+        default:
+            break;
+        }
+    }
+}
+
+// 从 ESP32 USART3 DMA 环形缓冲复制所有新到的字节到 pbuf,返回长度
+static bool EspUsart_RecvData(uint8_t *pbuf, uint8_t *plen)
+{
+    uint8_t data_cnt = DMA_RX_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart3_rx);
+
+    if (data_cnt == esp_recv_offset)
+    {
+        *plen = 0;
+        return false;
+    }
+
+    if (data_cnt > esp_recv_offset)
+    {
+        *plen = data_cnt - esp_recv_offset;
+        memcpy(pbuf, &Esp_Rxbuffer[esp_recv_offset], *plen);
+    }
+    else
+    {
+        // DMA 环形回绕
+        uint8_t len1 = DMA_RX_SIZE - esp_recv_offset;
+        uint8_t len2 = data_cnt;
+        memcpy(pbuf, &Esp_Rxbuffer[esp_recv_offset], len1);
+        memcpy(pbuf + len1, Esp_Rxbuffer, len2);
+        *plen = len1 + len2;
+    }
+
+    esp_recv_offset = data_cnt;
+    return true;
+}
+
+void Esp_unpack(void)
+{
+    static uint8_t temp[100];
+    static uint8_t lens = 0;
+
+    if (!EspUsart_RecvData(temp, &lens))
+        return;
+
+    for (uint8_t i = 0; i < lens; i++)
+    {
+        if (!TransportUnpacking(&EspFrame_Type, esp_buffer, COMM_BUF_SIZE, temp[i]))
+            continue;
+
+        esp_cmd = ((uint16_t)esp_buffer[0] << 8) | esp_buffer[1];
+        DataPacket_Type.updated = 1;
+
+        switch (esp_cmd)
+        {
+        case SAVE_CMD:
+            Parse_Save(esp_buffer);
+            break;
+        case TEST_CMD:
+            DataPacket_Type.TEST_SET = (esp_buffer[3] << 8) | esp_buffer[2];
+            test_en = esp_buffer[4];
+            break;
+        case EX_CMD:
+            DataPacket_Type.EX_VAL = esp_buffer[2] ? 1 : 0;
+            break;
+        case SPRAY_CMD:
+            DataPacket_Type.SPRAYMAIN = esp_buffer[2] ? 1 : 0;
+            break;
+        case FACTORY_SAVE_CMD:
+            Parse_FactorySave(esp_buffer);
             break;
         case LOG_START_CMD:
             log_en = 1;

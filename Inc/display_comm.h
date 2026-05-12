@@ -101,6 +101,7 @@ typedef struct
 /* 公共接口 */
 void     MX_USART2_UART_Init(void); // USART2 初始化
 void     Comm_unpack(void);         // 主循环调用,处理 DMA 缓冲新数据
+void     Esp_unpack(void);          // 主循环调用,处理 ESP32 USART3 DMA 缓冲
 void     InitCommBuffer(void);      // 启动前调用一次,清空接收游标
 uint16_t GetDisplay_Cmd(void);      // 返回最近一次解出的命令字
 

@@ -14,23 +14,29 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 DMA_HandleTypeDef hdma_uart1;
+DMA_HandleTypeDef hdma_usart3_rx;
 TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart3;
 
 uint16_t ADvalue[ADC_CH_COUNT] = {0};
 uint8_t  Rxbuffer[UART_RX_BUF_SIZE];
+uint8_t  Esp_Rxbuffer[UART_RX_BUF_SIZE];
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+void MX_USART3_UART_Init(void);
 
 /*------------------------------------------------------------------------------
- * printf 重定向到 USART2
+ * printf 重定向到 USART2 + USART3 (Nextion + ESP32)
  *----------------------------------------------------------------------------*/
 int fputc(int ch, FILE *f)
 {
     while (!(USART2->SR & USART_SR_TXE)) {}
     USART2->DR = (uint8_t)ch;
+    while (!(USART3->SR & USART_SR_TXE)) {}
+    USART3->DR = (uint8_t)ch;
     return ch;
 }
 
@@ -47,6 +53,7 @@ int main(void)
     MX_ADC1_Init();
     MX_TIM2_Init();
     MX_USART2_UART_Init();
+    MX_USART3_UART_Init();
     MX_DAC_Init();
 
     Flash_Init();
@@ -93,6 +100,7 @@ int main(void)
         Display_BackgroundSetting();
         Refresh_Setting();
         Comm_unpack();
+        Esp_unpack();
     }
 }
 
@@ -158,6 +166,28 @@ static void MX_GPIO_Init(void)
 
     HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
+}
+
+/*------------------------------------------------------------------------------
+ * USART3 — ESP32 通信 (PC10 TX / PC11 RX, 115200, DMA 循环接收)
+ *----------------------------------------------------------------------------*/
+void MX_USART3_UART_Init(void)
+{
+    huart3.Instance = USART3;
+    huart3.Init.BaudRate = 115200;
+    huart3.Init.WordLength = UART_WORDLENGTH_8B;
+    huart3.Init.StopBits = UART_STOPBITS_1;
+    huart3.Init.Parity = UART_PARITY_NONE;
+    huart3.Init.Mode = UART_MODE_TX_RX;
+    huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+    huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+    if (HAL_UART_Init(&huart3) != HAL_OK)
+        Error_Handler();
+
+    __HAL_UART_CLEAR_OREFLAG(&huart3);
+
+    if (HAL_UART_Receive_DMA(&huart3, Esp_Rxbuffer, UART_RX_BUF_SIZE) != HAL_OK)
+        Error_Handler();
 }
 
 void Error_Handler(void)

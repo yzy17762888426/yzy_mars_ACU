@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Y&amp;M ACU 工业控制面板</title>
+<script src="https://modao.cc/agent-py/static/source/js/tailwindcss.3.4.3.js"></script>
+<script src="https://modao.cc/agent-py/static/source/js/iconify-icon.min.1.0.7.js"></script>
+<style>
+        body {
+            background-color: #0a0a0a;
+            color: #e5e7eb;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .panel-card {
+            background-color: #1a1a1a;
+            border: 1px solid #2d2d2d;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .input-dark {
+            background-color: #262626;
+            border: 1px solid #404040;
+            color: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .input-dark:focus {
+            border-color: #f97316;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2);
+        }
+        .progress-container {
+            background-color: #333;
+            height: 48px;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        #maf-progress {
+            background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
+            width: 50%;
+            transition: width 0.1s linear;
+        }
+        .glow-text {
+            text-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .recording-active {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+<div class="panel-card w-full max-w-md rounded-3xl p-8 space-y-8">
+<!-- 标题 -->
+<div class="text-center">
+<h1 class="text-3xl font-bold text-orange-500 tracking-wider glow-text uppercase">Y&amp;M ACU</h1>
+<p class="text-gray-500 text-xs mt-1 uppercase tracking-widest">Advanced Control Unit v4.0</p>
+</div>
+<!-- MAF 实时监控区 -->
+<div class="bg-black rounded-2xl p-6 border border-gray-800 shadow-inner">
+<div class="flex justify-between items-end mb-4">
+<span class="text-gray-400 font-medium">MAF 实时数据</span>
+<div class="text-4xl font-mono font-bold text-white tracking-tighter">
+                    MAF: <span id="maf-value">0</span>
+</div>
+</div>
+<!-- 进度条 -->
+<div class="progress-container mb-2">
+<div id="maf-progress" style="width: 45%"></div>
+</div>
+<div class="flex justify-between text-[10px] text-gray-500 font-mono">
+<span>0%</span>
+<span>50%</span>
+<span>100%</span>
+</div>
+</div>
+<!-- 参数设置区 -->
+<div class="space-y-5">
+<div class="flex justify-between items-center">
+<label class="text-sm text-gray-400"> Pump1 Start</label>
+<span class="text-sm font-mono text-white">5000</span>
+</div>
+<div class="flex justify-between items-center">
+<label class="text-sm text-gray-400"> Pump1 Full</label>
+<span class="text-sm font-mono text-white">8000</span>
+</div>
+<div class="flex justify-between items-center">
+<label class="text-sm text-gray-400"> Ex Mode</label>
+<span class="text-sm font-mono text-white"> AT </span>
+</div>
+<div class="flex justify-between items-center">
+<label class="text-sm text-gray-400"> Ex Valve</label>
+<span class="text-sm font-mono text-white"> OFF </span>
+</div>
+<!-- 记录控制组 -->
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-800">
+<button class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white py-4 rounded-2xl font-bold transition-all transform active:scale-95" id="start-btn">
+<iconify-icon class="text-xl" icon="mdi:record-circle-outline"></iconify-icon>
+                开始记录
+            </button>
+<button class="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white py-4 rounded-2xl font-bold transition-all transform active:scale-95 opacity-50 cursor-not-allowed" disabled="" id="stop-btn">
+<iconify-icon class="text-xl" icon="mdi:stop-circle-outline"></iconify-icon>
+                停止记录
+            </button>
+</div>
+<!-- 底部状态 -->
+<div class="flex justify-between items-center pt-4 text-[10px] text-gray-600 font-mono border-t border-gray-900">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                LIVE UPDATE: 100ms
+            </div>
+<div id="current-date">2026-04-03 22:43:55</div>
+</div>
+</div>
+<script>
+        // 实时数据模拟逻辑
+        const mafValueEl = document.getElementById('maf-value');
+        const mafProgressEl = document.getElementById('maf-progress');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const dateEl = document.getElementById('current-date');
+
+        let isRecording = false;
+        let baseValue = 85;
+
+        // 更新数值和进度条
+        function updateStats() {
+            // 模拟工业数据的微小波动
+            const fluctuation = (Math.random() - 0.5) * 4;
+            let currentValue = Math.max(0, Math.min(100, (baseValue + fluctuation).toFixed(1)));
+            
+            mafValueEl.textContent = currentValue;
+            mafProgressEl.style.width = `${currentValue}%`;
+
+            // 动态改变进度条颜色
+            if (currentValue > 90) {
+                mafProgressEl.style.background = 'linear-gradient(90deg, #ef4444 0%, #b91c1c 100%)';
+            } else if (currentValue < 20) {
+                mafProgressEl.style.background = 'linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%)';
+            } else {
+                mafProgressEl.style.background = 'linear-gradient(90deg, #f97316 0%, #fb923c 100%)';
+            }
+        }
+
+        // 按钮交互逻辑
+        startBtn.addEventListener('click', () => {
+            isRecording = true;
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed', 'recording-active');
+            startBtn.disabled = true;
+            stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            stopBtn.disabled = false;
+            console.log("Recording started...");
+        });
+
+        stopBtn.addEventListener('click', () => {
+            isRecording = false;
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'recording-active');
+            startBtn.disabled = false;
+            stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            stopBtn.disabled = true;
+            console.log("Recording stopped and saved.");
+        });
+
+        // 定时器
+        setInterval(updateStats, 100);
+
+        // 更新时间
+        function updateDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            dateEl.textContent = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+    </script>
+</body>
+</html>

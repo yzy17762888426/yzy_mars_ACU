@@ -1,0 +1,660 @@
+/*
+ * Y&M ACU - ESP32-C6 WiFi 控制面板
+ * 解析 STM32 USART3 广播的 Nextion 指令，手机网页实时显示
+ *
+ * 串口: 如果 Arduino IDE 开启了 "USB CDC On Boot" → 用 Serial0
+ *        如果没开启 → 改为 Serial
+ */
+#include <WiFi.h>
+#include <NetworkClient.h>
+#include <WebServer.h>
+
+#define STM32_SER  Serial0   // ← 编译不过就改为 Serial
+
+const char* AP_SSID = "ACU Center";
+const char* AP_PASS = "acu666666";
+WebServer server(80);
+
+/* ========================================================================
+ * 全局数据 — 从 STM32 Nextion 输出中解析
+ * ======================================================================== */
+// --- 主页 ---
+static int16_t g_maf = 0;                // mafValueShow.txt
+static char    g_unit[8]   = "Hz";       // unit.txt
+static int16_t g_p1_duty   = 0;          // pump1.val
+static int16_t g_p2_duty   = 0;          // pump2.val
+static int8_t  g_p1_en     = 0;          // Pump1Stat.pic  9=on
+static int8_t  g_p2_en     = 0;          // Pump2Stat.pic
+static int8_t  g_ex_valve  = 0;          // ExStat.pic
+static int8_t  g_spray     = 0;          // RainStat.pic
+static char    g_ex_mode[4]= "AT";       // valueStaus.txt
+static int16_t g_p1_start  = 0;          // startValueShow.txt
+static int16_t g_p1_full   = 0;          // fullValueShow.txt
+static int16_t g_p2_start  = 0;          // startValueSh2.txt
+static int16_t g_p2_full   = 0;          // fullValueShow2.txt
+static int16_t g_sp_on     = 0;          // sprayOp.txt
+static int16_t g_sp_off    = 0;          // sprayIdle.txt
+
+// --- 设置页 ---
+static int16_t g_s_p1en    = 0;          // pumpEnable1.val
+static int16_t g_s_sta1    = 0;          // STA1.val
+static int16_t g_s_full1   = 0;          // FULL1.val
+static int16_t g_s_p2en    = 0;          // pumpEnable2.val
+static int16_t g_s_sta2    = 0;          // STA2.val
+static int16_t g_s_full2   = 0;          // FULL2.val
+static int16_t g_s_spm     = 0;          // spraymain.val
+static int16_t g_s_spon    = 0;          // rainOnTime.val
+static int16_t g_s_spoff   = 0;          // rainOffTime.val
+static int16_t g_s_exauto  = 0;          // setExAuto.val
+static int16_t g_s_exset   = 0;          // EX_SET.val
+static int16_t g_s_exdelay = 0;          // exDelay.val
+static int16_t g_s_duty    = 0;          // pumpStdDuty.val
+static int16_t g_s_mtype   = 0;          // mafTypeSelect.val
+static int16_t g_s_lsen    = 0;          // lightSen.val
+static int16_t g_s_bright  = 0;          // bright.val
+static int16_t g_s_flex0   = 0;          // flex0.val
+static int16_t g_s_flex100 = 0;          // flex100.val
+static int16_t g_s_fluid   = 0;          // Fluidmain.val
+static int16_t g_s_exrev   = 0;          // Ex_Rev.val
+static int16_t g_s_tempu   = 0;          // Temp_Select.val
+static int16_t g_s_testv   = 0;          // mafValueInput.val
+static int16_t g_s_testen  = 0;          // testCmd.val
+
+// --- 出厂页 ---
+static int16_t g_f_mafadj  = 0;          // mafvadj.val
+static int16_t g_f_ethadj  = 0;          // ethvadj.val
+static int16_t g_f_afradj  = 0;          // afrvadj.val
+static int16_t g_f_lv1     = 0;          // level1.val
+static int16_t g_f_lv2     = 0;          // level2.val
+static int16_t g_f_lv3     = 0;          // level3.val
+static int16_t g_f_dac1    = 0;          // dac1_adj.val
+static int16_t g_f_dac2    = 0;          // dac2_adj.val
+static int16_t g_f_ver     = 0;          // version.val
+static int16_t g_f_lsr     = 0;          // lightsensor.val
+
+// --- 页面同步 (从 STM32 page 命令解析) ---
+static int8_t  g_page     = 0;          // 0=main 1=setting
+
+/* ---- 数据记录 ---- */
+#define MAX_RECORDS 5000
+String logData[MAX_RECORDS];
+int    recordIndex = 0;
+bool   isLogging   = false;
+unsigned long startTime = 0;
+
+/* ========================================================================
+ * 串口解析 — Nextion 协议 (\xff\xff\xff 结尾)
+ * ======================================================================== */
+static String cmdBuf;
+static int    ffCount = 0;
+
+static int16_t* findValTarget(const String &name) {
+  if (name == "pump1")         return &g_p1_duty;
+  if (name == "pump2")         return &g_p2_duty;
+  if (name == "STA1")          return &g_s_sta1;
+  if (name == "FULL1")         return &g_s_full1;
+  if (name == "pumpEnable1")   return &g_s_p1en;
+  if (name == "STA2")          return &g_s_sta2;
+  if (name == "FULL2")         return &g_s_full2;
+  if (name == "pumpEnable2")   return &g_s_p2en;
+  if (name == "spraymain")     return &g_s_spm;
+  if (name == "rainOnTime")    return &g_s_spon;
+  if (name == "rainOffTime")   return &g_s_spoff;
+  if (name == "setExAuto")     return &g_s_exauto;
+  if (name == "EX_SET")        return &g_s_exset;
+  if (name == "exDelay")       return &g_s_exdelay;
+  if (name == "pumpStdDuty")   return &g_s_duty;
+  if (name == "mafTypeSelect") return &g_s_mtype;
+  if (name == "lightSen")      return &g_s_lsen;
+  if (name == "bright")        return &g_s_bright;
+  if (name == "flex0")         return &g_s_flex0;
+  if (name == "flex100")       return &g_s_flex100;
+  if (name == "Fluidmain")     return &g_s_fluid;
+  if (name == "Ex_Rev")        return &g_s_exrev;
+  if (name == "Temp_Select")   return &g_s_tempu;
+  if (name == "mafValueInput") return &g_s_testv;
+  if (name == "testCmd")       { return (int16_t*)&g_s_testen; } // same size
+  if (name == "mafvadj")       return &g_f_mafadj;
+  if (name == "ethvadj")       return &g_f_ethadj;
+  if (name == "afrvadj")       return &g_f_afradj;
+  if (name == "level1")        return &g_f_lv1;
+  if (name == "level2")        return &g_f_lv2;
+  if (name == "level3")        return &g_f_lv3;
+  if (name == "dac1_adj")      return &g_f_dac1;
+  if (name == "dac2_adj")      return &g_f_dac2;
+  if (name == "version")       return &g_f_ver;
+  if (name == "lightsensor")   return &g_f_lsr;
+  return nullptr;
+}
+
+static void parseCmd(const String &cmd) {
+  // 页面切换同步
+  if (cmd.startsWith("page ")) {
+    String pg = cmd.substring(5);
+    if (pg == "page0")      g_page = 0;
+    else if (pg == "page1") g_page = 1;
+    return;
+  }
+
+  int dot = cmd.indexOf('.');
+  if (dot < 0) return;
+  String name = cmd.substring(0, dot);
+  String prop = cmd.substring(dot + 1);
+
+  if (prop.startsWith("txt=")) {
+    int q1 = prop.indexOf('"'), q2 = prop.lastIndexOf('"');
+    if (q1 < 0 || q2 <= q1) return;
+    String v = prop.substring(q1 + 1, q2);
+    if      (name == "mafValueShow")   g_maf = v.toInt();
+    else if (name == "valueStaus")     { strncpy(g_ex_mode, v.c_str(), 3); g_ex_mode[3] = 0; }
+    else if (name == "unit")           { strncpy(g_unit, v.c_str(), 7); g_unit[7] = 0; }
+    else if (name == "startValueShow") g_p1_start = v.toInt();
+    else if (name == "fullValueShow")  g_p1_full  = v.toInt();
+    else if (name == "startValueSh2")  g_p2_start = v.toInt();
+    else if (name == "fullValueShow2") g_p2_full  = v.toInt();
+    else if (name == "sprayOp")        g_sp_on    = v.toInt();
+    else if (name == "sprayIdle")      g_sp_off   = v.toInt();
+  }
+  else if (prop.startsWith("val=")) {
+    int16_t *t = findValTarget(name);
+    if (t) *t = (int16_t)prop.substring(4).toInt();
+  }
+  else if (prop.startsWith("pic=")) {
+    int v = prop.substring(4).toInt();
+    if      (name == "ExStat")    g_ex_valve = (v == 9);
+    else if (name == "Pump1Stat") g_p1_en    = (v == 9);
+    else if (name == "Pump2Stat") g_p2_en    = (v == 9);
+    else if (name == "RainStat")  g_spray    = (v == 9);
+  }
+}
+
+static void updateSerial() {
+  while (STM32_SER.available()) {
+    uint8_t b = STM32_SER.read();
+    if (b == 0xFF) {
+      if (++ffCount >= 3) {
+        cmdBuf.trim();
+        if (cmdBuf.length() > 0) parseCmd(cmdBuf);
+        cmdBuf.clear();
+        ffCount = 0;
+      }
+    } else {
+      if (ffCount > 0) {
+        for (int i = 0; i < ffCount; i++) cmdBuf += (char)0xFF;
+        ffCount = 0;
+      }
+      cmdBuf += (char)b;
+    }
+  }
+}
+
+/* ========================================================================
+ * 命令下发 — Nextion 二进制协议
+ *   帧格式: AA AA [CMD_L CMD_H] [PAYLOAD...] [CRC_L CRC_H] 55 55
+ * ======================================================================== */
+static uint16_t crc16(const uint8_t *d, uint16_t len) {
+  uint16_t crc = 0xFFFF;
+  for (uint16_t i = 0; i < len; i++) {
+    crc ^= d[i];
+    for (uint8_t j = 0; j < 8; j++) {
+      if (crc & 1) { crc >>= 1; crc ^= 0xA001; }
+      else crc >>= 1;
+    }
+  }
+  return crc;
+}
+
+static void sendFrame(uint16_t cmd, const uint8_t *payload, uint8_t plen) {
+  uint8_t buf[64];
+  buf[0] = (cmd >> 8) & 0xFF;   // CMD 高字节在前 (大端，与 STM32 一致)
+  buf[1] = cmd & 0xFF;
+  if (payload && plen > 0) memcpy(buf + 2, payload, plen);
+  uint16_t crc = crc16(buf, 2 + plen);
+  STM32_SER.write(0xAA); STM32_SER.write(0xAA);
+  STM32_SER.write(buf, 2 + plen);
+  STM32_SER.write(crc & 0xFF); STM32_SER.write((crc >> 8) & 0xFF);
+  STM32_SER.write(0x55); STM32_SER.write(0x55);
+}
+
+static void sendFrameCmdOnly(uint16_t cmd) { sendFrame(cmd, nullptr, 0); }
+
+static void sendSaveCmd() {
+  uint8_t p[44]; int o = 0;
+  #define P16(v) { p[o++]=(v)&0xFF; p[o++]=(v)>>8; }
+  P16(g_s_p1en);  P16(g_s_sta1);   P16(g_s_full1);
+  P16(g_s_p2en);  P16(g_s_sta2);   P16(g_s_full2);
+  P16(g_s_spm);   P16(g_s_spon);   P16(g_s_spoff);
+  P16(g_s_exauto);P16(g_s_exset);  P16(g_s_exdelay);
+  P16(g_s_duty);  P16(g_s_mtype);  P16(g_s_lsen);  P16(g_s_bright);
+  P16(g_s_flex0); P16(g_s_flex100);P16(g_s_fluid);
+  P16(g_s_exrev); P16(g_s_tempu);
+  #undef P16
+  sendFrame(0xF10A, p, o);
+}
+
+static void sendFactorySave() {
+  uint8_t p[16]; int o = 0;
+  #define P16(v) { p[o++]=(v)&0xFF; p[o++]=(v)>>8; }
+  P16(g_f_mafadj); P16(g_f_ethadj); P16(g_f_afradj);
+  P16(g_f_lv1); P16(g_f_lv2); P16(g_f_lv3);
+  P16(g_f_dac1); P16(g_f_dac2);
+  #undef P16
+  sendFrame(0xF811, p, o);
+}
+
+/* ========================================================================
+ * HTML 页面
+ * ======================================================================== */
+const char* HTML_MAIN = R"rawliteral(
+<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<title>Y&amp;M ACU</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;background:#121212;color:#eee}
+.app{max-width:480px;margin:0 auto;background:#1a1a1a;min-height:100vh;display:flex;flex-direction:column}
+/* tabs */
+.tabs{display:flex;background:#111;border-bottom:2px solid #333}
+.tab{flex:1;padding:12px 0;text-align:center;font-size:14px;font-weight:700;color:#888;cursor:pointer;border-bottom:3px solid transparent}
+.tab.on{color:#ff9800;border-bottom-color:#ff9800}
+/* page */
+.pg{display:none;flex:1;padding:16px;overflow-y:auto}
+.pg.on{display:block}
+/* card */
+.cd{background:#0d0d0d;border-radius:16px;padding:16px;margin-bottom:14px;border:1px solid #222}
+.sec{color:#ff9800;font-size:13px;font-weight:700;letter-spacing:1px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #222}
+/* MAF */
+.maf{font-size:clamp(30px,9vw,48px);font-weight:600;font-family:Consolas,monospace;text-align:center;letter-spacing:2px;margin-bottom:16px;text-shadow:2px 0 rgba(255,0,0,.3),-2px 0 rgba(0,255,255,.3)}
+.bw{width:100%;height:36px;background:#333;border-radius:10px;overflow:hidden;margin-bottom:8px}
+.bar{height:100%;width:0;background:linear-gradient(90deg,#4caf50,#ff9800,#f44336);transition:width .15s}
+.sc{display:flex;justify-content:space-between;font-size:12px;color:#666;font-family:Consolas,monospace;padding:0 4px}
+/* rows */
+.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #1a1a1a}
+.row:last-child{border-bottom:none}
+.lbl{color:#bbb;font-size:14px}
+.val{color:#fff;font-weight:700;font-family:Consolas,monospace;font-size:15px}
+/* dot */
+.dt{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dt.on{background:#4caf50}.dt.off{background:#555}
+/* input */
+.inp{width:90px;background:#222;border:1px solid #444;border-radius:8px;color:#fff;font-family:Consolas,monospace;font-size:14px;padding:6px 8px;text-align:right}
+.inp:focus{border-color:#ff9800;outline:none}
+/* toggle */
+.sw{position:relative;width:44px;height:24px;display:inline-block}
+.sw input{opacity:0;width:0;height:0}
+.sl{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#444;border-radius:24px;transition:.2s}
+.sl:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.sw input:checked+.sl{background:#4caf50}
+.sw input:checked+.sl:before{transform:translateX(20px)}
+/* buttons */
+.btn{padding:12px;border:none;border-radius:12px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;width:100%;margin-top:6px}
+.btn:active{transform:scale(.97)}
+.bg{background:#0a9d58}.br{background:#991a2c}.bo{background:#ff9800}.bb{background:#333}
+.sm{padding:8px 16px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;border:none;cursor:pointer}
+.sm:active{transform:scale(.96)}
+.smg{background:#0a9d58}.smr{background:#991a2c}.smo{background:#ff9800}
+.brow{display:flex;gap:8px;margin-top:8px}
+.foot{text-align:center;font-size:11px;color:#444;padding:12px}
+</style>
+</head><body>
+<div class="app">
+
+<!-- ===== TABS ===== -->
+<div class="tabs">
+  <div class="tab on" onclick="swPage(0)">Display</div>
+  <div class="tab" onclick="swPage(1)">Setting</div>
+  <div class="tab" onclick="swPage(2)">Factory</div>
+</div>
+
+<!-- ===== PAGE 0: 显示 ===== -->
+<div id="p0" class="pg on">
+  <div class="cd">
+    <div class="sec">MAF</div>
+    <div id="nMaf" class="maf">0 Hz</div>
+    <div class="bw"><div id="bMaf" class="bar"></div></div>
+    <div class="sc"><span>0%</span><span>50%</span><span>100%</span></div>
+  </div>
+  <div class="cd">
+    <div class="sec">STATUS</div>
+    <div class="row"><span class="lbl"><span id="dP1" class="dt off"></span>Pump A</span><span id="vP1" class="val">0%</span></div>
+    <div class="row"><span class="lbl"><span id="dP2" class="dt off"></span>Pump B</span><span id="vP2" class="val">0%</span></div>
+    <div class="row"><span class="lbl">Exhaust</span><span id="vEx" class="val">AT CLOSED</span></div>
+    <div class="row"><span class="lbl">Spray</span><span id="vSp" class="val">OFF</span></div>
+  </div>
+  <div class="cd">
+    <div class="sec">THRESHOLD</div>
+    <div class="row"><span class="lbl">Pump A Start</span><span id="vP1S" class="val">0</span></div>
+    <div class="row"><span class="lbl">Pump A Full</span><span id="vP1F" class="val">0</span></div>
+    <div class="row"><span class="lbl">Pump B Start</span><span id="vP2S" class="val">0</span></div>
+    <div class="row"><span class="lbl">Pump B Full</span><span id="vP2F" class="val">0</span></div>
+    <div class="row"><span class="lbl">Spray On/Off</span><span id="vSpT" class="val">0/0 s</span></div>
+  </div>
+  <div class="cd">
+    <div class="sec">QUICK CONTROL</div>
+    <div class="brow">
+      <button class="sm smo" onclick="cmd('ex')">Ex Valve</button>
+      <button class="sm smo" onclick="cmd('spray')">Spray</button>
+    </div>
+    <div class="brow">
+      <button class="sm smg" onclick="cmd('logstart')">StartRecord</button>
+      <button class="sm smr" onclick="stopRec()">StopRecord</button>
+    </div>
+  </div>
+  <div class="foot">LIVE UPDATE 200ms</div>
+</div>
+
+<!-- ===== PAGE 1: 设置 ===== -->
+<div id="p1" class="pg">
+  <div class="cd">
+    <div class="sec">PUMP A</div>
+    <div class="row"><span class="lbl">Enable</span><label class="sw"><input type="checkbox" id="iPE1"><span class="sl"></span></label></div>
+    <div class="row"><span class="lbl">Start</span><input type="number" id="iS1" class="inp"></div>
+    <div class="row"><span class="lbl">Full</span><input type="number" id="iF1" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">PUMP B</div>
+    <div class="row"><span class="lbl">Enable</span><label class="sw"><input type="checkbox" id="iPE2"><span class="sl"></span></label></div>
+    <div class="row"><span class="lbl">Start</span><input type="number" id="iS2" class="inp"></div>
+    <div class="row"><span class="lbl">Full</span><input type="number" id="iF2" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">SPRAY</div>
+    <div class="row"><span class="lbl">Main</span><label class="sw"><input type="checkbox" id="iSPM"><span class="sl"></span></label></div>
+    <div class="row"><span class="lbl">On Time (s)</span><input type="number" id="iSPO" class="inp"></div>
+    <div class="row"><span class="lbl">Off Time (s)</span><input type="number" id="iSPF" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">EXHAUST</div>
+    <div class="row"><span class="lbl">Auto Mode</span><label class="sw"><input type="checkbox" id="iEXA"><span class="sl"></span></label></div>
+    <div class="row"><span class="lbl">Threshold</span><input type="number" id="iEXS" class="inp"></div>
+    <div class="row"><span class="lbl">Delay (s)</span><input type="number" id="iEXD" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">DISPLAY</div>
+    <div class="row"><span class="lbl">MAF Type (Hz=0 mV=1)</span><input type="number" id="iMT" class="inp" min="0" max="1"></div>
+    <div class="row"><span class="lbl">Pump Duty %</span><input type="number" id="iPD" class="inp"></div>
+    <div class="row"><span class="lbl">Brightness</span><input type="number" id="iBR" class="inp"></div>
+    <div class="row"><span class="lbl">Light Sensor</span><input type="number" id="iLS" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">CALIBRATION</div>
+    <div class="row"><span class="lbl">Flex 0%</span><input type="number" id="iFX0" class="inp"></div>
+    <div class="row"><span class="lbl">Flex 100%</span><input type="number" id="iFX100" class="inp"></div>
+    <div class="row"><span class="lbl">Fluid Main</span><input type="number" id="iFM" class="inp"></div>
+    <div class="row"><span class="lbl">Ex Reverse</span><label class="sw"><input type="checkbox" id="iER"><span class="sl"></span></label></div>
+    <div class="row"><span class="lbl">Temp Unit (C=0 F=1)</span><input type="number" id="iTU" class="inp" min="0" max="1"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">TEST MODE</div>
+    <div class="row"><span class="lbl">Test Value</span><input type="number" id="iTV" class="inp"></div>
+    <div class="row"><span class="lbl">Test Enable</span><label class="sw"><input type="checkbox" id="iTE"><span class="sl"></span></label></div>
+  </div>
+  <button class="btn bg" onclick="saveSetting()">SAVE SETTING</button>
+  <button class="btn bb" onclick="swPage(0)" style="margin-top:8px">BACK</button>
+  <div style="height:20px"></div>
+</div>
+
+<!-- ===== PAGE 2: 出厂 ===== -->
+<div id="p2" class="pg">
+  <div class="cd">
+    <div class="sec">VOLTAGE ADJUST</div>
+    <div class="row"><span class="lbl">MAF Adj</span><input type="number" id="iFMA" class="inp"></div>
+    <div class="row"><span class="lbl">ETH Adj</span><input type="number" id="iFET" class="inp"></div>
+    <div class="row"><span class="lbl">AFR Adj</span><input type="number" id="iFAF" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">LEVEL</div>
+    <div class="row"><span class="lbl">Level 1</span><input type="number" id="iFL1" class="inp"></div>
+    <div class="row"><span class="lbl">Level 2</span><input type="number" id="iFL2" class="inp"></div>
+    <div class="row"><span class="lbl">Level 3</span><input type="number" id="iFL3" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">DAC</div>
+    <div class="row"><span class="lbl">DAC1 Adj</span><input type="number" id="iFD1" class="inp"></div>
+    <div class="row"><span class="lbl">DAC2 Adj</span><input type="number" id="iFD2" class="inp"></div>
+  </div>
+  <div class="cd">
+    <div class="sec">INFO</div>
+    <div class="row"><span class="lbl">Version</span><span id="vVer" class="val">0</span></div>
+    <div class="row"><span class="lbl">Light Sensor ADC</span><span id="vLSR" class="val">0</span></div>
+  </div>
+  <button class="btn bg" onclick="saveFactory()">SAVE FACTORY</button>
+  <button class="btn bb" onclick="swPage(0)" style="margin-top:8px">BACK</button>
+  <div style="height:20px"></div>
+</div>
+
+</div><!-- app -->
+<script>
+var p1s=0,p1f=0,curPage=0;
+function swPage(n){
+  curPage=n;
+  document.querySelectorAll('.tab').forEach(function(t,i){t.className=i===n?'tab on':'tab'});
+  document.querySelectorAll('.pg').forEach(function(p,i){p.className=i===n?'pg on':'pg'});
+  // 网页切页 → 通知 ESP32 → 转发命令给 STM32
+  var x=new XMLHttpRequest();
+  if(n===0) x.open('GET','/cmd?type=back',true);
+  else if(n===1) x.open('GET','/cmd?type=settings',true);
+  else if(n===2) x.open('GET','/cmd?type=factory',true);
+  x.send();
+}
+function $(id){return document.getElementById(id)}
+function pi(v){return parseInt(v)||0}
+
+// fetch data
+setInterval(function(){
+  var x=new XMLHttpRequest();
+  x.onload=function(){
+    try{var d=JSON.parse(this.responseText)}catch(e){return}
+    // TFT 页面切换同步
+    if(d.pg!==undefined&&d.pg!==curPage){
+      curPage=d.pg;
+      document.querySelectorAll('.tab').forEach(function(t,i){t.className=i===d.pg?'tab on':'tab'});
+      document.querySelectorAll('.pg').forEach(function(p,i){p.className=i===d.pg?'pg on':'pg'});
+    }
+    // page0
+    $('nMaf').innerText=d.maf+' '+d.unit;
+    var pct=0;
+    if(p1f>p1s){if(d.maf>=p1f)pct=100;else if(d.maf>p1s)pct=Math.round((d.maf-p1s)*100/(p1f-p1s))}
+    $('bMaf').style.width=pct+'%';
+    $('dP1').className='dt '+(d.p1e?'on':'off');
+    $('vP1').innerText=d.p1d+'%';
+    $('dP2').className='dt '+(d.p2e?'on':'off');
+    $('vP2').innerText=d.p2d+'%';
+    $('vEx').innerText=d.exm+(d.exv?' OPEN':' CLOSED');
+    $('vEx').style.color=d.exv?'#4caf50':'#f44336';
+    $('vSp').innerText=d.sp?'ON':'OFF';
+    $('vSp').style.color=d.sp?'#4caf50':'#666';
+    $('vP1S').innerText=d.p1s;
+    $('vP1F').innerText=d.p1f;
+    $('vP2S').innerText=d.p2s;
+    $('vP2F').innerText=d.p2f;
+    p1s=d.p1s;p1f=d.p1f;
+    $('vSpT').innerText=d.spon+'/'+d.spoff+' s';
+    // page1 inputs - only fill if not focused
+    function sf(id,v){var e=$(id);if(document.activeElement!==e){if(e.type==='checkbox')e.checked=!!v;else e.value=v}}
+    sf('iPE1',d.sp1e?1:0);sf('iS1',d.ssta1);sf('iF1',d.sful1);
+    sf('iPE2',d.sp2e?1:0);sf('iS2',d.ssta2);sf('iF2',d.sful2);
+    sf('iSPM',d.sspm?1:0);sf('iSPO',d.sspon);sf('iSPF',d.sspof);
+    sf('iEXA',d.sexa?1:0);sf('iEXS',d.sexs);sf('iEXD',d.sexd);
+    sf('iMT',d.smt);sf('iPD',d.spd);sf('iBR',d.sbr);sf('iLS',d.sls);
+    sf('iFX0',d.sf0);sf('iFX100',d.sf100);sf('iFM',d.sfm);
+    sf('iER',d.srev?1:0);sf('iTU',d.stu);sf('iTV',d.stv);sf('iTE',d.ste?1:0);
+    // page2
+    sf('iFMA',d.fma);sf('iFET',d.feth);sf('iFAF',d.fafr);
+    sf('iFL1',d.fl1);sf('iFL2',d.fl2);sf('iFL3',d.fl3);
+    sf('iFD1',d.fd1);sf('iFD2',d.fd2);
+    $('vVer').innerText=d.ver;$('vLSR').innerText=d.flsr;
+  };
+  x.open('GET','/getdata',true);x.send();
+},200);
+
+function gv(id){var e=$(id);if(e.type==='checkbox')return e.checked?1:0;return parseInt(e.value)||0}
+function cmd(t){var x=new XMLHttpRequest();x.open('GET','/cmd?type='+t,true);x.send()}
+function saveSetting(){
+  var p='type=save';
+  p+='&p1e='+gv('iPE1')+'&s1='+gv('iS1')+'&f1='+gv('iF1');
+  p+='&p2e='+gv('iPE2')+'&s2='+gv('iS2')+'&f2='+gv('iF2');
+  p+='&spm='+gv('iSPM')+'&spon='+gv('iSPO')+'&spof='+gv('iSPF');
+  p+='&exa='+gv('iEXA')+'&exs='+gv('iEXS')+'&exd='+gv('iEXD');
+  p+='&spd='+gv('iPD')+'&mt='+gv('iMT')+'&ls='+gv('iLS')+'&br='+gv('iBR');
+  p+='&f0='+gv('iFX0')+'&f100='+gv('iFX100')+'&fm='+gv('iFM');
+  p+='&rev='+gv('iER')+'&tu='+gv('iTU');
+  var x=new XMLHttpRequest();x.open('GET','/cmd?'+p,true);x.send();
+  alert('Setting sent!');
+}
+function saveFactory(){
+  var p='type=factorysave';
+  p+='&ma='+gv('iFMA')+'&eth='+gv('iFET')+'&afr='+gv('iFAF');
+  p+='&l1='+gv('iFL1')+'&l2='+gv('iFL2')+'&l3='+gv('iFL3');
+  p+='&d1='+gv('iFD1')+'&d2='+gv('iFD2');
+  var x=new XMLHttpRequest();x.open('GET','/cmd?'+p,true);x.send();
+  alert('Factory setting sent!');
+}
+function stopRec(){
+  var x=new XMLHttpRequest();
+  x.onload=function(){
+    var b=new Blob([this.responseText],{type:'text/csv'}),u=URL.createObjectURL(b),a=document.createElement('a');
+    a.href=u;a.download='acu_log.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  };
+  x.open('GET','/stopRecord',true);x.send();
+}
+</script>
+</body></html>
+)rawliteral";
+
+/* ========================================================================
+ * HTTP 处理
+ * ======================================================================== */
+void handleRoot() { server.send(200, "text/html", HTML_MAIN); }
+
+void handleGetData() {
+  String j = "{";
+  j += "\"maf\":" + String(g_maf) + ",\"unit\":\"" + g_unit + "\",";
+  j += "\"p1d\":" + String(g_p1_duty) + ",\"p2d\":" + String(g_p2_duty) + ",";
+  j += "\"p1e\":" + String(g_p1_en) + ",\"p2e\":" + String(g_p2_en) + ",";
+  j += "\"exm\":\"" + String(g_ex_mode) + "\",\"exv\":" + String(g_ex_valve) + ",";
+  j += "\"sp\":" + String(g_spray) + ",";
+  j += "\"p1s\":" + String(g_p1_start) + ",\"p1f\":" + String(g_p1_full) + ",";
+  j += "\"p2s\":" + String(g_p2_start) + ",\"p2f\":" + String(g_p2_full) + ",";
+  j += "\"spon\":" + String(g_sp_on) + ",\"spoff\":" + String(g_sp_off) + ",";
+  // settings
+  j += "\"sp1e\":" + String(g_s_p1en) + ",\"ssta1\":" + String(g_s_sta1) + ",\"sful1\":" + String(g_s_full1) + ",";
+  j += "\"sp2e\":" + String(g_s_p2en) + ",\"ssta2\":" + String(g_s_sta2) + ",\"sful2\":" + String(g_s_full2) + ",";
+  j += "\"sspm\":" + String(g_s_spm) + ",\"sspon\":" + String(g_s_spon) + ",\"sspof\":" + String(g_s_spoff) + ",";
+  j += "\"sexa\":" + String(g_s_exauto) + ",\"sexs\":" + String(g_s_exset) + ",\"sexd\":" + String(g_s_exdelay) + ",";
+  j += "\"spd\":" + String(g_s_duty) + ",\"smt\":" + String(g_s_mtype) + ",";
+  j += "\"sls\":" + String(g_s_lsen) + ",\"sbr\":" + String(g_s_bright) + ",";
+  j += "\"sf0\":" + String(g_s_flex0) + ",\"sf100\":" + String(g_s_flex100) + ",";
+  j += "\"sfm\":" + String(g_s_fluid) + ",\"srev\":" + String(g_s_exrev) + ",";
+  j += "\"stu\":" + String(g_s_tempu) + ",\"stv\":" + String(g_s_testv) + ",\"ste\":" + String(g_s_testen) + ",";
+  // factory
+  j += "\"fma\":" + String(g_f_mafadj) + ",\"feth\":" + String(g_f_ethadj) + ",\"fafr\":" + String(g_f_afradj) + ",";
+  j += "\"fl1\":" + String(g_f_lv1) + ",\"fl2\":" + String(g_f_lv2) + ",\"fl3\":" + String(g_f_lv3) + ",";
+  j += "\"fd1\":" + String(g_f_dac1) + ",\"fd2\":" + String(g_f_dac2) + ",";
+  j += "\"ver\":" + String(g_f_ver) + ",\"flsr\":" + String(g_f_lsr);
+  j += ",\"pg\":" + String(g_page);
+  j += "}";
+  server.send(200, "application/json", j);
+}
+
+void handleCmd() {
+  String type = server.arg("type");
+
+  if (type == "ex") {
+    uint8_t v = g_ex_valve ? 0 : 1;
+    sendFrame(0xF60F, &v, 1);
+  }
+  else if (type == "spray") {
+    uint8_t v = g_spray ? 0 : 1;
+    sendFrame(0xF710, &v, 1);
+  }
+  else if (type == "save") {
+    // update globals from query params
+    g_s_p1en   = server.arg("p1e").toInt();
+    g_s_sta1   = server.arg("s1").toInt();
+    g_s_full1  = server.arg("f1").toInt();
+    g_s_p2en   = server.arg("p2e").toInt();
+    g_s_sta2   = server.arg("s2").toInt();
+    g_s_full2  = server.arg("f2").toInt();
+    g_s_spm    = server.arg("spm").toInt();
+    g_s_spon   = server.arg("spon").toInt();
+    g_s_spoff  = server.arg("spof").toInt();
+    g_s_exauto = server.arg("exa").toInt();
+    g_s_exset  = server.arg("exs").toInt();
+    g_s_exdelay= server.arg("exd").toInt();
+    g_s_duty   = server.arg("spd").toInt();
+    g_s_mtype  = server.arg("mt").toInt();
+    g_s_lsen   = server.arg("ls").toInt();
+    g_s_bright = server.arg("br").toInt();
+    g_s_flex0  = server.arg("f0").toInt();
+    g_s_flex100= server.arg("f100").toInt();
+    g_s_fluid  = server.arg("fm").toInt();
+    g_s_exrev  = server.arg("rev").toInt();
+    g_s_tempu  = server.arg("tu").toInt();
+    sendSaveCmd();
+  }
+  else if (type == "factorysave") {
+    g_f_mafadj = server.arg("ma").toInt();
+    g_f_ethadj = server.arg("eth").toInt();
+    g_f_afradj = server.arg("afr").toInt();
+    g_f_lv1    = server.arg("l1").toInt();
+    g_f_lv2    = server.arg("l2").toInt();
+    g_f_lv3    = server.arg("l3").toInt();
+    g_f_dac1   = server.arg("d1").toInt();
+    g_f_dac2   = server.arg("d2").toInt();
+    sendFactorySave();
+  }
+  else if (type == "logstart") { sendFrameCmdOnly(0xFA13); }
+  else if (type == "logstop")  { sendFrameCmdOnly(0xFB14); }
+  else if (type == "back")     { sendFrameCmdOnly(0xF20B); g_page = 0; }
+  else if (type == "settings") { sendFrameCmdOnly(0xF40D); g_page = 1; }
+  else if (type == "factory")  { sendFrameCmdOnly(0xF912); g_page = 2; }
+
+  server.send(200, "text/plain", "OK");
+}
+
+void handleStartRecord() {
+  recordIndex = 0;
+  isLogging = true;
+  startTime = millis();
+  server.send(200, "text/plain", "OK");
+}
+
+void handleStopRecord() {
+  isLogging = false;
+  String csv = "Time(ms),MAF,PumpA(%),PumpB(%),ExValve,Spray,ExMode\n";
+  for (int i = 0; i < recordIndex; i++) csv += logData[i];
+  server.send(200, "text/csv", csv);
+}
+
+/* ========================================================================
+ * Setup & Loop
+ * ======================================================================== */
+void setup() {
+  STM32_SER.begin(115200);
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(AP_SSID, AP_PASS);
+
+  server.on("/",             handleRoot);
+  server.on("/getdata",      handleGetData);
+  server.on("/cmd",          handleCmd);
+  server.on("/startRecord",  handleStartRecord);
+  server.on("/stopRecord",   handleStopRecord);
+  server.begin();
+}
+
+void loop() {
+  updateSerial();
+  server.handleClient();
+
+  static unsigned long lastRec = 0;
+  if (isLogging && recordIndex < MAX_RECORDS && millis() - lastRec >= 100) {
+    lastRec = millis();
+    logData[recordIndex++] = String(millis() - startTime) + "," +
+      g_maf + "," +
+      g_p1_duty + "," + g_p2_duty + "," +
+      g_ex_valve + "," + g_spray + "," +
+      g_ex_mode + "\n";
+  }
+}
