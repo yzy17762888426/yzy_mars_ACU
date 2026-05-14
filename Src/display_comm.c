@@ -1,5 +1,6 @@
 #include "display_comm.h"
 #include "main.h"
+#include <string.h>
 
 extern UART_HandleTypeDef huart2;
 
@@ -42,7 +43,12 @@ void InitCommBuffer(void)
 
 uint16_t GetDisplay_Cmd(void)
 {
-    return display_cmd;
+    uint16_t cmd = display_cmd;
+    if (cmd == 0)
+        cmd = esp_cmd;
+    display_cmd = 0;
+    esp_cmd = 0;
+    return cmd;
 }
 
 // Modbus CRC16

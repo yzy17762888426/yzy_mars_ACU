@@ -109,21 +109,21 @@ void Display_SettingPage(void)
 
     // 喷淋
     NEX_VAL("spraymain",   Show_DataPacketType.SPRAYMAIN ? 1 : 0);
-    NEX_VAL("rainOnTime",  Show_DataPacketType.RAIN_ONTIME);
-    NEX_VAL("rainOffTime", Show_DataPacketType.RAIN_OFFTIME);
+    NEX_VAL("SPON",  Show_DataPacketType.RAIN_ONTIME);
+    NEX_VAL("SPIDLE", Show_DataPacketType.RAIN_OFFTIME);
 
     // 排气
     NEX_VAL("setExAuto",   Show_DataPacketType.EX_AUTO ? 1 : 0);
     NEX_VAL("EX_SET",      Show_DataPacketType.EX_SET);
-    NEX_VAL("exDelay",     Show_DataPacketType.EX_DELAY);
+    NEX_VAL("EX_DEALY",     Show_DataPacketType.EX_DELAY);
 
     // 泵占空比
-    NEX_VAL("pumpStdDuty", Show_DataPacketType.PUMP_STDUTY);
+    NEX_VAL("PumpStDuty", Show_DataPacketType.PUMP_STDUTY);
 
     // 显示
     NEX_VAL("mafTypeSelect", Show_DataPacketType.Hz_Mv == MV_MODE ? 1 : 0);
-    NEX_VAL("lightSen",      Show_DataPacketType.LightSen);
-    NEX_VAL("bright",        Show_DataPacketType.Bright);
+    NEX_VAL("LightSen",      Show_DataPacketType.LightSen);
+    NEX_VAL("Bright",        Show_DataPacketType.Bright);
 
     // MAF 标定
     NEX_VAL("flex0",   Show_DataPacketType.FLEX0);
@@ -379,8 +379,15 @@ void Refresh_Setting(void)
         if (test_en)
             TestPumpOutput();
         break;
+    case EX_CMD:
+        NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
+        break;
+    case SPRAY_CMD:
+        NEX_PIC("RainStat", Show_DataPacketType.SPRAYMAIN ? PIC_ON : PIC_OFF);
+        break;
     case FACTORY_MODE_CMD:
         SetMode(FACTORY_MODE);
+        NEX_PAGE("page2", 50);
         Set_DAC1(4095);
         Set_DAC2(4095);
         break;

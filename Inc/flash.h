@@ -29,5 +29,5 @@ void STMFLASH_Read(uint32_t ReadAddr,uint16_t *pBuffer,uint16_t NumToRead);   		
 void Flash_WriteSetting(uint16_t* WriteData,uint16_t DataLens);  
 void Flash_ReadSetting(uint16_t* WriteData,uint16_t DataLens);
 
-
+void USER_FlashReadProtection(uint8_t en);
 #endif

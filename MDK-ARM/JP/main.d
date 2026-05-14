@@ -27,4 +27,4 @@ jp/main.o: ..\Src\main.c ..\Inc\main.h \
   ..\Drivers\STM32F1xx_HAL_Driver\Inc\stm32f1xx_hal_uart.h \
   ..\Inc\display_show.h ..\Inc\pump.h ..\Inc\get_maf.h \
   ..\Inc\display_comm.h ..\Inc\flex.h ..\Inc\exhaust.h ..\Inc\spray.h \
-  ..\Inc\log.h
+  ..\Inc\log.h ..\Inc\flash.h

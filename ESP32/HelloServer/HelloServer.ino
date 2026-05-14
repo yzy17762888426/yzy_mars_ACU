@@ -34,6 +34,12 @@ static int16_t g_p2_start  = 0;          // startValueSh2.txt
 static int16_t g_p2_full   = 0;          // fullValueShow2.txt
 static int16_t g_sp_on     = 0;          // sprayOp.txt
 static int16_t g_sp_off    = 0;          // sprayIdle.txt
+static int16_t g_ethanol   = 0;          // eValueShow.txt  (0.1% 单位, 0~1000)
+static int16_t g_temp_x10  = 0;          // tValueShow.txt  (0.1° 单位, 可负)
+static int8_t  g_warn_fluid = 0;         // FluidIco vis
+static int8_t  g_warn_hi    = 0;         // hiIco vis (电瓶过压)
+static int8_t  g_warn_low   = 0;         // lowIco vis (电瓶欠压)
+static int8_t  g_test_mode  = 0;         // testIco vis
 
 // --- 设置页 ---
 static int16_t g_s_p1en    = 0;          // pumpEnable1.val
@@ -133,6 +139,20 @@ static void parseCmd(const String &cmd) {
     String pg = cmd.substring(5);
     if (pg == "page0")      g_page = 0;
     else if (pg == "page1") g_page = 1;
+    else if (pg == "page2") g_page = 2;
+    return;
+  }
+
+  if (cmd.startsWith("vis ")) {
+    int comma = cmd.indexOf(',');
+    if (comma > 4) {
+      String obj = cmd.substring(4, comma);
+      int on = cmd.substring(comma + 1).toInt();
+      if      (obj == "FluidIco") g_warn_fluid = on;
+      else if (obj == "hiIco")    g_warn_hi    = on;
+      else if (obj == "lowIco")   g_warn_low   = on;
+      else if (obj == "testIco")  g_test_mode  = on;
+    }
     return;
   }
 
@@ -154,6 +174,8 @@ static void parseCmd(const String &cmd) {
     else if (name == "fullValueShow2") g_p2_full  = v.toInt();
     else if (name == "sprayOp")        g_sp_on    = v.toInt();
     else if (name == "sprayIdle")      g_sp_off   = v.toInt();
+    else if (name == "eValueShow")     g_ethanol  = (int16_t)(v.toFloat() * 10);
+    else if (name == "tValueShow")     g_temp_x10 = (int16_t)(v.toFloat() * 10);
   }
   else if (prop.startsWith("val=")) {
     int16_t *t = findValTarget(name);
@@ -280,6 +302,9 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
 /* input */
 .inp{width:90px;background:#222;border:1px solid #444;border-radius:8px;color:#fff;font-family:Consolas,monospace;font-size:14px;padding:6px 8px;text-align:right}
 .inp:focus{border-color:#ff9800;outline:none}
+/* select */
+.sel{width:90px;background:#222;border:1px solid #444;border-radius:8px;color:#fff;font-family:Consolas,monospace;font-size:14px;padding:6px 8px;appearance:none;-webkit-appearance:none}
+.sel:focus{border-color:#ff9800;outline:none}
 /* toggle */
 .sw{position:relative;width:44px;height:24px;display:inline-block}
 .sw input{opacity:0;width:0;height:0}
@@ -309,6 +334,8 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
 
 <!-- ===== PAGE 0: 显示 ===== -->
 <div id="p0" class="pg on">
+  <div id="warnBar" style="display:none;background:#3a1515;border:1px solid #f44336;border-radius:10px;padding:8px 14px;margin-bottom:10px;text-align:center;font-weight:700;font-size:14px;color:#f44336;overflow:hidden;white-space:nowrap"></div>
+  <div id="testBanner" style="display:none;background:#ff9800;color:#000;text-align:center;padding:6px;font-weight:700;border-radius:10px;margin-bottom:10px">TEST MODE</div>
   <div class="cd">
     <div class="sec">MAF</div>
     <div id="nMaf" class="maf">0 Hz</div>
@@ -316,9 +343,24 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
     <div class="sc"><span>0%</span><span>50%</span><span>100%</span></div>
   </div>
   <div class="cd">
-    <div class="sec">STATUS</div>
+    <div class="sec">PUMP OUTPUT</div>
     <div class="row"><span class="lbl"><span id="dP1" class="dt off"></span>Pump A</span><span id="vP1" class="val">0%</span></div>
-    <div class="row"><span class="lbl"><span id="dP2" class="dt off"></span>Pump B</span><span id="vP2" class="val">0%</span></div>
+    <div class="bw"><div id="bP1" class="bar" style="background:#4caf50"></div></div>
+    <div class="row" style="margin-top:10px"><span class="lbl"><span id="dP2" class="dt off"></span>Pump B</span><span id="vP2" class="val">0%</span></div>
+    <div class="bw"><div id="bP2" class="bar" style="background:#2196f3"></div></div>
+  </div>
+  <div class="cd">
+    <div class="sec">ETHANOL</div>
+    <div id="nEth" class="maf">0.0%</div>
+    <div class="bw"><div id="bEth" class="bar"></div></div>
+    <div class="sc"><span>0%</span><span>50%</span><span>100%</span></div>
+  </div>
+  <div class="cd">
+    <div class="sec">TEMPERATURE</div>
+    <div class="row"><span class="lbl">Fuel Temp</span><span id="vTmp" class="val">0.0</span></div>
+  </div>
+  <div class="cd">
+    <div class="sec">STATUS</div>
     <div class="row"><span class="lbl">Exhaust</span><span id="vEx" class="val">AT CLOSED</span></div>
     <div class="row"><span class="lbl">Spray</span><span id="vSp" class="val">OFF</span></div>
   </div>
@@ -372,18 +414,18 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
   </div>
   <div class="cd">
     <div class="sec">DISPLAY</div>
-    <div class="row"><span class="lbl">MAF Type (Hz=0 mV=1)</span><input type="number" id="iMT" class="inp" min="0" max="1"></div>
+    <div class="row"><span class="lbl">Airflow Unit</span><select id="iMT" class="sel"><option value="0">Hz</option><option value="1">mV</option></select></div>
     <div class="row"><span class="lbl">Pump Duty %</span><input type="number" id="iPD" class="inp"></div>
     <div class="row"><span class="lbl">Brightness</span><input type="number" id="iBR" class="inp"></div>
-    <div class="row"><span class="lbl">Light Sensor</span><input type="number" id="iLS" class="inp"></div>
+    <div class="row"><span class="lbl">Light Sensor</span><select id="iLS" class="sel"><option value="0">Off</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option></select></div>
   </div>
   <div class="cd">
     <div class="sec">CALIBRATION</div>
     <div class="row"><span class="lbl">Flex 0%</span><input type="number" id="iFX0" class="inp"></div>
     <div class="row"><span class="lbl">Flex 100%</span><input type="number" id="iFX100" class="inp"></div>
-    <div class="row"><span class="lbl">Fluid Main</span><input type="number" id="iFM" class="inp"></div>
+    <div class="row"><span class="lbl">Fluid Enable</span><label class="sw"><input type="checkbox" id="iFM"><span class="sl"></span></label></div>
     <div class="row"><span class="lbl">Ex Reverse</span><label class="sw"><input type="checkbox" id="iER"><span class="sl"></span></label></div>
-    <div class="row"><span class="lbl">Temp Unit (C=0 F=1)</span><input type="number" id="iTU" class="inp" min="0" max="1"></div>
+    <div class="row"><span class="lbl">Temp Unit</span><select id="iTU" class="sel"><option value="0">&#176;C</option><option value="1">&#176;F</option></select></div>
   </div>
   <div class="cd">
     <div class="sec">TEST MODE</div>
@@ -427,8 +469,13 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
 </div><!-- app -->
 <script>
 var p1s=0,p1f=0,curPage=0;
+// 用户已经手动改过的字段 — polling 不再覆盖这些,直到 SAVE/BACK
+var userTouched={};
+function clearTouched(){userTouched={};}
 function swPage(n){
   curPage=n;
+  // 进入/离开设置页都清掉,SAVE 也会清,等同于"重新打开"
+  clearTouched();
   document.querySelectorAll('.tab').forEach(function(t,i){t.className=i===n?'tab on':'tab'});
   document.querySelectorAll('.pg').forEach(function(p,i){p.className=i===n?'pg on':'pg'});
   // 网页切页 → 通知 ESP32 → 转发命令给 STM32
@@ -448,6 +495,8 @@ setInterval(function(){
     try{var d=JSON.parse(this.responseText)}catch(e){return}
     // TFT 页面切换同步
     if(d.pg!==undefined&&d.pg!==curPage){
+      // 屏幕端切了页 → 清掉本地 touched 标志,重新跟随
+      clearTouched();
       curPage=d.pg;
       document.querySelectorAll('.tab').forEach(function(t,i){t.className=i===d.pg?'tab on':'tab'});
       document.querySelectorAll('.pg').forEach(function(p,i){p.className=i===d.pg?'pg on':'pg'});
@@ -457,33 +506,69 @@ setInterval(function(){
     var pct=0;
     if(p1f>p1s){if(d.maf>=p1f)pct=100;else if(d.maf>p1s)pct=Math.round((d.maf-p1s)*100/(p1f-p1s))}
     $('bMaf').style.width=pct+'%';
+    // Pump bars
     $('dP1').className='dt '+(d.p1e?'on':'off');
     $('vP1').innerText=d.p1d+'%';
+    $('bP1').style.width=d.p1d+'%';
     $('dP2').className='dt '+(d.p2e?'on':'off');
     $('vP2').innerText=d.p2d+'%';
+    $('bP2').style.width=d.p2d+'%';
+    // Ethanol
+    var ethVal=d.eth||0;
+    $('nEth').innerText=(ethVal/10).toFixed(1)+'%';
+    $('bEth').style.width=Math.min(ethVal/10,100)+'%';
+    // Temperature
+    var t=d.tmp||0;
+    $('vTmp').innerText=(t/10).toFixed(1)+'°'+(d.stu?'F':'C');
+    // Status
     $('vEx').innerText=d.exm+(d.exv?' OPEN':' CLOSED');
     $('vEx').style.color=d.exv?'#4caf50':'#f44336';
     $('vSp').innerText=d.sp?'ON':'OFF';
     $('vSp').style.color=d.sp?'#4caf50':'#666';
-    $('vP1S').innerText=d.p1s;
-    $('vP1F').innerText=d.p1f;
-    $('vP2S').innerText=d.p2s;
-    $('vP2F').innerText=d.p2f;
+    $('vP1S').innerText=d.p1s+' '+d.unit;
+    $('vP1F').innerText=d.p1f+' '+d.unit;
+    $('vP2S').innerText=d.p2s+' '+d.unit;
+    $('vP2F').innerText=d.p2f+' '+d.unit;
     p1s=d.p1s;p1f=d.p1f;
     $('vSpT').innerText=d.spon+'/'+d.spoff+' s';
-    // page1 inputs - only fill if not focused
-    function sf(id,v){var e=$(id);if(document.activeElement!==e){if(e.type==='checkbox')e.checked=!!v;else e.value=v}}
-    sf('iPE1',d.sp1e?1:0);sf('iS1',d.ssta1);sf('iF1',d.sful1);
-    sf('iPE2',d.sp2e?1:0);sf('iS2',d.ssta2);sf('iF2',d.sful2);
-    sf('iSPM',d.sspm?1:0);sf('iSPO',d.sspon);sf('iSPF',d.sspof);
-    sf('iEXA',d.sexa?1:0);sf('iEXS',d.sexs);sf('iEXD',d.sexd);
-    sf('iMT',d.smt);sf('iPD',d.spd);sf('iBR',d.sbr);sf('iLS',d.sls);
-    sf('iFX0',d.sf0);sf('iFX100',d.sf100);sf('iFM',d.sfm);
-    sf('iER',d.srev?1:0);sf('iTU',d.stu);sf('iTV',d.stv);sf('iTE',d.ste?1:0);
-    // page2
-    sf('iFMA',d.fma);sf('iFET',d.feth);sf('iFAF',d.fafr);
-    sf('iFL1',d.fl1);sf('iFL2',d.fl2);sf('iFL3',d.fl3);
-    sf('iFD1',d.fd1);sf('iFD2',d.fd2);
+    // warning — 单横条轮切显示
+    var warns=[];
+    if(d.wf)warns.push({t:'Low Fluid Level',c:'#ff9800'});
+    if(d.wh)warns.push({t:'Battery Over Voltage',c:'#f44336'});
+    if(d.wl)warns.push({t:'Battery Under Voltage',c:'#ffeb3b'});
+    var eWB=$('warnBar');
+    if(eWB){
+      if(warns.length>0){
+        eWB.style.display='block';
+        if(warns.length===1||eWB.dataset.wl!=String(warns.length)){
+          eWB.dataset.wl=warns.length;eWB.dataset.wi='0';
+        }
+        var ci=parseInt(eWB.dataset.wi)||0;
+        eWB.innerText=warns[ci].t;eWB.style.color=warns[ci].c;eWB.style.borderColor=warns[ci].c;
+        var ni=(ci+1)%warns.length;eWB.dataset.wi=String(ni);
+      }else{eWB.style.display='none';}
+    }
+    // test mode
+    var eT=$('testBanner');if(eT)eT.style.display=d.tm?'block':'none';
+    // setting/factory 字段:用户没动过的持续从 STM32 同步,动过的冻结直到 SAVE/BACK
+    function sv(id,v){
+      if(userTouched[id]) return;
+      var e=$(id); if(!e) return;
+      if(e.type==='checkbox') e.checked=!!v;
+      else if(e.tagName==='SELECT') e.value=''+v;
+      else if(document.activeElement!==e) e.value=v;
+    }
+    sv('iPE1',d.sp1e?1:0);sv('iS1',d.ssta1);sv('iF1',d.sful1);
+    sv('iPE2',d.sp2e?1:0);sv('iS2',d.ssta2);sv('iF2',d.sful2);
+    sv('iSPM',d.sspm?1:0);sv('iSPO',d.sspon);sv('iSPF',d.sspof);
+    sv('iEXA',d.sexa?1:0);sv('iEXS',d.sexs);sv('iEXD',d.sexd);
+    sv('iMT',d.smt);sv('iPD',d.spd);sv('iBR',d.sbr);sv('iLS',d.sls);
+    sv('iFX0',d.sf0);sv('iFX100',d.sf100);sv('iFM',d.sfm?1:0);
+    sv('iER',d.srev?1:0);sv('iTU',d.stu);sv('iTV',d.stv);sv('iTE',d.ste?1:0);
+    sv('iFMA',d.fma);sv('iFET',d.feth);sv('iFAF',d.fafr);
+    sv('iFL1',d.fl1);sv('iFL2',d.fl2);sv('iFL3',d.fl3);
+    sv('iFD1',d.fd1);sv('iFD2',d.fd2);
+    // 只读信息行
     $('vVer').innerText=d.ver;$('vLSR').innerText=d.flsr;
   };
   x.open('GET','/getdata',true);x.send();
@@ -499,16 +584,24 @@ function saveSetting(){
   p+='&exa='+gv('iEXA')+'&exs='+gv('iEXS')+'&exd='+gv('iEXD');
   p+='&spd='+gv('iPD')+'&mt='+gv('iMT')+'&ls='+gv('iLS')+'&br='+gv('iBR');
   p+='&f0='+gv('iFX0')+'&f100='+gv('iFX100')+'&fm='+gv('iFM');
-  p+='&rev='+gv('iER')+'&tu='+gv('iTU');
-  var x=new XMLHttpRequest();x.open('GET','/cmd?'+p,true);x.send();
-  alert('Setting sent!');
+  p+='&rev='+gv('iER')+'&tu='+gv('iTU')+'&tv='+gv('iTV')+'&te='+gv('iTE');
+  var x=new XMLHttpRequest();
+  x.open('POST','/cmd',true);
+  x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+  x.send(p);
+  clearTouched();
+  alert('Setting saved!');
 }
 function saveFactory(){
   var p='type=factorysave';
   p+='&ma='+gv('iFMA')+'&eth='+gv('iFET')+'&afr='+gv('iFAF');
   p+='&l1='+gv('iFL1')+'&l2='+gv('iFL2')+'&l3='+gv('iFL3');
   p+='&d1='+gv('iFD1')+'&d2='+gv('iFD2');
-  var x=new XMLHttpRequest();x.open('GET','/cmd?'+p,true);x.send();
+  var x=new XMLHttpRequest();
+  x.open('POST','/cmd',true);
+  x.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+  x.send(p);
+  clearTouched();
   alert('Factory setting sent!');
 }
 function stopRec(){
@@ -519,6 +612,15 @@ function stopRec(){
   };
   x.open('GET','/stopRecord',true);x.send();
 }
+// 用户改过的字段做标记,polling 就不会覆盖 — 等同于"编辑结构体"独立于 show 结构体
+['iPE1','iS1','iF1','iPE2','iS2','iF2','iSPM','iSPO','iSPF',
+ 'iEXA','iEXS','iEXD','iMT','iPD','iBR','iLS','iFX0','iFX100','iFM',
+ 'iER','iTU','iTV','iTE','iFMA','iFET','iFAF','iFL1','iFL2','iFL3','iFD1','iFD2'].forEach(function(id){
+  var e=document.getElementById(id);
+  if(!e) return;
+  e.addEventListener('input',function(){userTouched[id]=true;});
+  e.addEventListener('change',function(){userTouched[id]=true;});
+});
 </script>
 </body></html>
 )rawliteral";
@@ -538,6 +640,7 @@ void handleGetData() {
   j += "\"p1s\":" + String(g_p1_start) + ",\"p1f\":" + String(g_p1_full) + ",";
   j += "\"p2s\":" + String(g_p2_start) + ",\"p2f\":" + String(g_p2_full) + ",";
   j += "\"spon\":" + String(g_sp_on) + ",\"spoff\":" + String(g_sp_off) + ",";
+  j += "\"eth\":" + String(g_ethanol) + ",\"tmp\":" + String(g_temp_x10) + ",";
   // settings
   j += "\"sp1e\":" + String(g_s_p1en) + ",\"ssta1\":" + String(g_s_sta1) + ",\"sful1\":" + String(g_s_full1) + ",";
   j += "\"sp2e\":" + String(g_s_p2en) + ",\"ssta2\":" + String(g_s_sta2) + ",\"sful2\":" + String(g_s_full2) + ",";
@@ -554,6 +657,8 @@ void handleGetData() {
   j += "\"fd1\":" + String(g_f_dac1) + ",\"fd2\":" + String(g_f_dac2) + ",";
   j += "\"ver\":" + String(g_f_ver) + ",\"flsr\":" + String(g_f_lsr);
   j += ",\"pg\":" + String(g_page);
+  j += ",\"wf\":" + String(g_warn_fluid) + ",\"wh\":" + String(g_warn_hi) + ",\"wl\":" + String(g_warn_low);
+  j += ",\"tm\":" + String(g_test_mode);
   j += "}";
   server.send(200, "application/json", j);
 }
@@ -592,6 +697,12 @@ void handleCmd() {
     g_s_fluid  = server.arg("fm").toInt();
     g_s_exrev  = server.arg("rev").toInt();
     g_s_tempu  = server.arg("tu").toInt();
+    g_s_testv  = server.arg("tv").toInt();
+    g_s_testen = server.arg("te").toInt();
+    // Send TEST_CMD first so STM32 sets test_en before SAVE_CMD reads it
+    uint8_t tp[3] = {(uint8_t)(g_s_testv & 0xFF), (uint8_t)(g_s_testv >> 8), (uint8_t)g_s_testen};
+    sendFrame(0xF30C, tp, 3);
+    delay(50);
     sendSaveCmd();
   }
   else if (type == "factorysave") {
@@ -605,8 +716,12 @@ void handleCmd() {
     g_f_dac2   = server.arg("d2").toInt();
     sendFactorySave();
   }
-  else if (type == "logstart") { sendFrameCmdOnly(0xFA13); }
-  else if (type == "logstop")  { sendFrameCmdOnly(0xFB14); }
+  else if (type == "logstart") {
+    recordIndex = 0;
+    isLogging = true;
+    startTime = millis();
+  }
+  else if (type == "logstop")  { isLogging = false; }
   else if (type == "back")     { sendFrameCmdOnly(0xF20B); g_page = 0; }
   else if (type == "settings") { sendFrameCmdOnly(0xF40D); g_page = 1; }
   else if (type == "factory")  { sendFrameCmdOnly(0xF912); g_page = 2; }
