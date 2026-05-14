@@ -28,6 +28,7 @@ static int8_t  g_p2_en     = 0;          // Pump2Stat.pic
 static int8_t  g_ex_valve  = 0;          // ExStat.pic
 static int8_t  g_spray     = 0;          // RainStat.pic
 static char    g_ex_mode[4]= "AT";       // valueStaus.txt
+static int8_t  g_ex_auto   = 1;          // EX_AUTO: 1=AT, 0=MT
 static int16_t g_p1_start  = 0;          // startValueShow.txt
 static int16_t g_p1_full   = 0;          // fullValueShow.txt
 static int16_t g_p2_start  = 0;          // startValueSh2.txt
@@ -166,7 +167,7 @@ static void parseCmd(const String &cmd) {
     if (q1 < 0 || q2 <= q1) return;
     String v = prop.substring(q1 + 1, q2);
     if      (name == "mafValueShow")   g_maf = v.toInt();
-    else if (name == "valueStaus")     { strncpy(g_ex_mode, v.c_str(), 3); g_ex_mode[3] = 0; }
+    else if (name == "valueStaus")     { strncpy(g_ex_mode, v.c_str(), 3); g_ex_mode[3] = 0; g_ex_auto = (g_ex_mode[0] == 'A'); }
     else if (name == "unit")           { strncpy(g_unit, v.c_str(), 7); g_unit[7] = 0; }
     else if (name == "startValueShow") g_p1_start = v.toInt();
     else if (name == "fullValueShow")  g_p1_full  = v.toInt();
@@ -375,7 +376,7 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
   <div class="cd">
     <div class="sec">QUICK CONTROL</div>
     <div class="brow">
-      <button class="sm smo" onclick="cmd('ex')">Ex Valve</button>
+      <button class="sm smo" id="btnEx" onclick="cmdEx()">Ex Valve</button>
       <button class="sm smo" onclick="cmd('spray')">Spray</button>
     </div>
     <div class="brow">
@@ -472,10 +473,16 @@ var p1s=0,p1f=0,curPage=0;
 // 用户已经手动改过的字段 — polling 不再覆盖这些,直到 SAVE/BACK
 var userTouched={};
 function clearTouched(){userTouched={};}
+// 手动切页后短时间内忽略 polling 的 g_page 同步,防止旧响应把页面拉回去
+var ignorePgSyncUntil=0;
+// 排气当前模式: true=AT, false=MT
+var exAuto=true;
 function swPage(n){
   curPage=n;
   // 进入/离开设置页都清掉,SAVE 也会清,等同于"重新打开"
   clearTouched();
+  // 3 秒内忽略服务器页面同步,避免并行的旧 /getdata 响应把页面拉回原状态
+  ignorePgSyncUntil=Date.now()+3000;
   document.querySelectorAll('.tab').forEach(function(t,i){t.className=i===n?'tab on':'tab'});
   document.querySelectorAll('.pg').forEach(function(p,i){p.className=i===n?'pg on':'pg'});
   // 网页切页 → 通知 ESP32 → 转发命令给 STM32
@@ -494,7 +501,7 @@ setInterval(function(){
   x.onload=function(){
     try{var d=JSON.parse(this.responseText)}catch(e){return}
     // TFT 页面切换同步
-    if(d.pg!==undefined&&d.pg!==curPage){
+    if(d.pg!==undefined&&d.pg!==curPage&&Date.now()>ignorePgSyncUntil){
       // 屏幕端切了页 → 清掉本地 touched 标志,重新跟随
       clearTouched();
       curPage=d.pg;
@@ -521,6 +528,7 @@ setInterval(function(){
     var t=d.tmp||0;
     $('vTmp').innerText=(t/10).toFixed(1)+'°'+(d.stu?'F':'C');
     // Status
+    exAuto=(d.exm==='AT');
     $('vEx').innerText=d.exm+(d.exv?' OPEN':' CLOSED');
     $('vEx').style.color=d.exv?'#4caf50':'#f44336';
     $('vSp').innerText=d.sp?'ON':'OFF';
@@ -576,6 +584,9 @@ setInterval(function(){
 
 function gv(id){var e=$(id);if(e.type==='checkbox')return e.checked?1:0;return parseInt(e.value)||0}
 function cmd(t){var x=new XMLHttpRequest();x.open('GET','/cmd?type='+t,true);x.send()}
+function cmdEx(){
+  if(!exAuto) cmd('ex');   // 只有 MT 模式下才能控制阀门, AT 模式下点击无反应
+}
 function saveSetting(){
   var p='type=save';
   p+='&p1e='+gv('iPE1')+'&s1='+gv('iS1')+'&f1='+gv('iF1');
@@ -669,6 +680,13 @@ void handleCmd() {
   if (type == "ex") {
     uint8_t v = g_ex_valve ? 0 : 1;
     sendFrame(0xF60F, &v, 1);
+  }
+  else if (type == "exmode") {
+    uint8_t v = g_ex_auto ? 0 : 1;   // AT->MT, MT->AT
+    sendFrame(0xFC15, &v, 1);
+    g_ex_auto = !g_ex_auto;
+    strncpy(g_ex_mode, g_ex_auto ? "AT" : "MT", 3);
+    g_ex_mode[3] = 0;
   }
   else if (type == "spray") {
     uint8_t v = g_spray ? 0 : 1;

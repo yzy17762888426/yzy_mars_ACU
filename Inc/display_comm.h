@@ -22,6 +22,7 @@
 #define FACTORY_MODE_CMD    0xF912  // 进入出厂模式
 #define LOG_START_CMD       0xFA13  // 启动 LOG 记录
 #define LOG_STOP_CMD        0xFB14  // 停止 LOG 记录
+#define AT_MT_CMD           0xFC15  // 排气 AT/MT 模式切换: 0=MT, 1=AT
 
 // MAF 显示模式(Hz_Mv 字段使用)
 #define HZ_MODE             0x00    // 频率模式

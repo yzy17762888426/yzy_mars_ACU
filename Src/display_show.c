@@ -1,5 +1,6 @@
 #include "display_show.h"
 #include "display_comm.h"
+#include "exhaust.h"
 #include "main.h"
 #include "flash.h"
 #include "flex.h"
@@ -13,6 +14,9 @@
  *----------------------------------------------------------------------------*/
 #define PIC_OFF        8
 #define PIC_ON         9
+#define AT_PIC         17
+#define MT_PIC         18
+
 #define NEX_END        "\xff\xff\xff"
 
 #define NEX_VAL(name, v)       do { printf(name ".val=%d" NEX_END, (int)(v));          HAL_Delay(10); } while (0)
@@ -68,10 +72,20 @@ void Display_StartPage(void)
     NEX_PIC("Pump1Stat", Show_DataPacketType.PUMP1_EN  ? PIC_ON : PIC_OFF);
     NEX_PIC("Pump2Stat", Show_DataPacketType.PUMP2_EN  ? PIC_ON : PIC_OFF);
     NEX_PIC("RainStat",  Show_DataPacketType.SPRAYMAIN ? PIC_ON : PIC_OFF);
-    NEX_PIC("ExStat",    Show_DataPacketType.EX_VAL    ? PIC_ON : PIC_OFF);
+    NEX_PIC("ExStat",    ExhaustValve_GetState() ? PIC_ON : PIC_OFF);
 
-    // 排气模式 / 单位
-    NEX_TXT("valueStaus", Show_DataPacketType.EX_AUTO ? "AT" : "MT");
+    // 排气模式图标
+    if (Show_DataPacketType.EX_AUTO)
+    {
+        printf("ATMT.pic=%d\xff\xff\xff", AT_PIC);
+        printf("ATMT.pic2=%d\xff\xff\xff", AT_PIC);
+    }
+    else
+    {
+        printf("ATMT.pic=%d\xff\xff\xff", MT_PIC);
+        printf("ATMT.pic2=%d\xff\xff\xff", MT_PIC);
+    }
+    
     NEX_TXT("unit",       Show_DataPacketType.Hz_Mv   ? "mV" : "Hz");
 
     // 泵占空比(0~100%)
@@ -381,6 +395,20 @@ void Refresh_Setting(void)
         break;
     case EX_CMD:
         NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
+        break;
+    case AT_MT_CMD:
+        //NEX_TXT("valueStaus", Show_DataPacketType.EX_AUTO ? "AT" : "MT");
+        if (Show_DataPacketType.EX_AUTO)
+        {
+            printf("ATMT.pic=AT_PIC\xff\xff\xff");
+            printf("ATMT.pic2=AT_PIC\xff\xff\xff");
+        }
+        else
+        {
+            printf("ATMT.pic=MT_PIC\xff\xff\xff");
+            printf("ATMT.pic2=MT_PIC\xff\xff\xff");
+        }
+
         break;
     case SPRAY_CMD:
         NEX_PIC("RainStat", Show_DataPacketType.SPRAYMAIN ? PIC_ON : PIC_OFF);

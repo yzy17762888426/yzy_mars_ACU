@@ -218,7 +218,11 @@ void Comm_unpack(void)
             test_en = comm_buffer[4];
             break;
         case EX_CMD:
-            DataPacket_Type.EX_VAL = comm_buffer[2] ? 1 : 0;
+            if (!DataPacket_Type.EX_AUTO)  // MT 模式下才响应阀门控制
+                DataPacket_Type.EX_VAL = comm_buffer[2] ? 1 : 0;
+            break;
+        case AT_MT_CMD:
+            DataPacket_Type.EX_AUTO = comm_buffer[2] ? 1 : 0;
             break;
         case SPRAY_CMD:
             DataPacket_Type.SPRAYMAIN = comm_buffer[2] ? 1 : 0;
@@ -297,7 +301,11 @@ void Esp_unpack(void)
             test_en = esp_buffer[4];
             break;
         case EX_CMD:
-            DataPacket_Type.EX_VAL = esp_buffer[2] ? 1 : 0;
+            if (!DataPacket_Type.EX_AUTO)  // MT 模式下才响应阀门控制
+                DataPacket_Type.EX_VAL = esp_buffer[2] ? 1 : 0;
+            break;
+        case AT_MT_CMD:
+            DataPacket_Type.EX_AUTO = esp_buffer[2] ? 1 : 0;
             break;
         case SPRAY_CMD:
             DataPacket_Type.SPRAYMAIN = esp_buffer[2] ? 1 : 0;

@@ -19,6 +19,11 @@ static volatile uint8_t  valve_open = 0;
 static volatile uint8_t  close_delay_active = 0;
 static volatile uint32_t close_delay_start  = 0;
 
+uint8_t ExhaustValve_GetState(void)
+{
+    return valve_open;
+}
+
 static void Ex_WritePin(uint8_t open)
 {
     // EX_REV=0: 高电平触发(开=HIGH)  EX_REV=1: 低电平触发(开=LOW)
@@ -49,12 +54,9 @@ void ExhaustValve_Task(void)
 
     if (Show_DataPacketType.EX_AUTO)
     {
-        // AT 模式: EX_VAL 作为使能开关, freq_show > EX_SET 时开启
-        if (Show_DataPacketType.EX_VAL)
-        {
-            if (GetFreqShow() > Show_DataPacketType.EX_SET)
-                should_open = 1;
-        }
+        // AT 模式: 完全自动控制, 不受 EX_VAL 影响
+        if (GetFreqShow() > Show_DataPacketType.EX_SET)
+            should_open = 1;
     }
     else
     {
