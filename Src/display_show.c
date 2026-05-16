@@ -393,6 +393,31 @@ void Refresh_Setting(void)
         if (test_en)
             TestPumpOutput();
         break;
+    case V_AUTOSET_CMD:
+    {
+        uint32_t sum = 0;
+        uint16_t adc_min = 0xFFFF;
+        uint16_t adc_max = 0;
+        for (uint8_t i = 0; i < 20; i++)
+        {
+            uint16_t adc = ADvalue[CH_MAF_MV];
+            sum += adc;
+            if (adc < adc_min) adc_min = adc;
+            if (adc > adc_max) adc_max = adc;
+            HAL_Delay(1);
+        }
+        sum -= adc_min;
+        sum -= adc_max;
+        uint16_t avg = (uint16_t)(sum / 18);
+        if (avg != 0)
+        {
+            DataPacket_Type.MAF_ADJ = (uint16_t)((uint64_t)5000UL * 40950000UL / ((uint64_t)3300UL * avg));
+            Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
+            Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
+        }
+        NEX_VAL("mafvadj", Show_DataPacketType.MAF_ADJ);
+        break;
+    }
     case EX_CMD:
         NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
         break;
