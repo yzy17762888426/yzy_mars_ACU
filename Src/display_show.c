@@ -421,9 +421,8 @@ void Refresh_Setting(void)
     }
     case OUT_AUTOSET_CMD:
     {
-        uint16_t prev_dac = (uint16_t)(DAC->DOR1);
-        Set_DAC1(2048);                 // 2.5V / 3.3V * 4095 ≈ 3102
-        HAL_Delay(50);                  // 等待 DAC 输出稳定
+        Set_DAC1(2048);
+        HAL_Delay(50);
 
         uint32_t sum = 0;
         uint16_t adc_min = 0xFFFF;
@@ -447,7 +446,7 @@ void Refresh_Setting(void)
             Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
         }
         NEX_VAL("ethvadj", Show_DataPacketType.ETH_ADJ);
-        Set_DAC1(prev_dac);             // 恢复 DAC1 之前的状态
+        Set_DAC1(0);
         break;
     }
     case EX_CMD:
