@@ -134,13 +134,12 @@ void Flex_DAC_Out(void)
     // if (dac2 < 0)     dac2 = 0;
     // if (dac2 > 4095)  dac2 = 4095;
 
-    Set_DAC1((uint16_t)dac1);
+//    Set_DAC1((uint16_t)dac1);
 //    Set_DAC2((uint16_t)dac2);
 
     // 乙醇含量显示 (0.1% → X.X%)
     uint16_t eth_show = Get_Flex_Ethanol();
     printf("eValueShow.txt=\"%d.%d\"" NEX_END, eth_show / 10, eth_show % 10);
-    HAL_Delay(10);
 
     // 乙醇温度显示 (0.1°C 单位, TEMP_UINT=0→℃ 1→℉)
     int16_t temp = Get_Flex_Temp_x10();
@@ -150,5 +149,4 @@ void Flex_DAC_Out(void)
         printf("tValueShow.txt=\"%d.%d\"" NEX_END, temp / 10, temp % 10);
     else
         printf("tValueShow.txt=\"-%d.%d\"" NEX_END, (-temp) / 10, (-temp) % 10);
-    HAL_Delay(10);
 }

@@ -216,14 +216,14 @@ void Display_FactoryPage(void)
     NEX_VAL("lightsensor", ADvalue[CH_LIGHT_SENS]);
 
     // 自动校准: 1s 刷新一次,读取当前 ADC 计算系数
-    uint32_t now = HAL_GetTick();
-    if (now - factory_cal_tick >= 1000)
-    {
-        factory_cal_tick = now;
-        NEX_VAL("mafvadj", Cal_Coeff(AD_MAF_MV));
-        NEX_VAL("ethvadj", Cal_Coeff(AD_RESERVE_B0));
-        NEX_VAL("afrvadj", Cal_Coeff(AD_RESERVE_A0));
-    }
+//    uint32_t now = HAL_GetTick();
+//    if (now - factory_cal_tick >= 1000)
+//    {
+//        factory_cal_tick = now;
+//        NEX_VAL("mafvadj", Cal_Coeff(AD_MAF_MV));
+//        NEX_VAL("ethvadj", Cal_Coeff(AD_RESERVE_B0));
+//        NEX_VAL("afrvadj", Cal_Coeff(AD_RESERVE_A0));
+//    }
 }
 
 /*------------------------------------------------------------------------------
@@ -293,7 +293,7 @@ void Display_Warning(void)
     if (warn_shown < 3)
     {
         printf("vis %s,0\xff\xff\xff", warn_icons[warn_shown]);
-        HAL_Delay(10);
+        HAL_Delay(5);
     }
 
     // 显示下一个活跃告警(轮切)
@@ -302,7 +302,7 @@ void Display_Warning(void)
         warn_slot %= count;
         warn_shown = active[warn_slot++];
         printf("vis %s,1\xff\xff\xff", warn_icons[warn_shown]);
-        HAL_Delay(10);
+        HAL_Delay(5);
     }
     else
     {
@@ -400,13 +400,13 @@ void Refresh_Setting(void)
         //NEX_TXT("valueStaus", Show_DataPacketType.EX_AUTO ? "AT" : "MT");
         if (Show_DataPacketType.EX_AUTO)
         {
-            printf("ATMT.pic=AT_PIC\xff\xff\xff");
-            printf("ATMT.pic2=AT_PIC\xff\xff\xff");
+            printf("ATMT.pic=%d\xff\xff\xff",AT_PIC);
+            printf("ATMT.pic2=%d\xff\xff\xff",AT_PIC);
         }
         else
         {
-            printf("ATMT.pic=MT_PIC\xff\xff\xff");
-            printf("ATMT.pic2=MT_PIC\xff\xff\xff");
+            printf("ATMT.pic=%d\xff\xff\xff",MT_PIC);
+            printf("ATMT.pic2=%d\xff\xff\xff",MT_PIC);
         }
 
         break;
@@ -415,7 +415,7 @@ void Refresh_Setting(void)
         break;
     case FACTORY_MODE_CMD:
         SetMode(FACTORY_MODE);
-        NEX_PAGE("page2", 50);
+        NEX_PAGE("FactorySetting", 50);
         Set_DAC1(4095);
         Set_DAC2(4095);
         break;

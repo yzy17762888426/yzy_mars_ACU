@@ -24,14 +24,14 @@ static void Log_AddLine(const char *text)
     if (log_count[log_cur] >= MAX_PER_CH)
     {
         printf("slt%d.txt=\"%s\"" NEX_END, log_cur, log_buf[log_cur]);
-        HAL_Delay(10);
+        HAL_Delay(3);
 
         log_cur = (log_cur + 1) % LOG_CH;
         log_buf[log_cur][0] = '\0';
         log_len[log_cur] = 0;
         log_count[log_cur] = 0;
         printf("slt%d.txt=\"\"" NEX_END, log_cur);
-        HAL_Delay(10);
+        HAL_Delay(3);
         log_flush_cnt = FLUSH_INTERVAL - 1;
     }
 

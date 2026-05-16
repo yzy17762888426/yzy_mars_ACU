@@ -72,23 +72,23 @@ int main(void)
 
         if (mode == NORMAL_MODE || mode == TEST_MODE)
         {
-            if (tick % 100 == 0)
+            if (tick % 100 == 10)
             {
                 GetFreqHz_Task();
 								Log_Task();
-								//Flex_DAC_Out();
+								Flex_DAC_Out();
             }
-            else if (tick % 100 == 20)
+            else if (tick % 100 == 40)
             {
                 A_MotorPump_Task();
                 B_MotorPump_Task();
                 ExhaustValve_Task();
             }
-            else if (tick % 100 == 30)
+            else if (tick % 100 == 80)
             {
                 Spray_Task();
             }
-            else if (tick % 1000 == 999)
+            else if (tick % 1000 == 983)
             {
                 Display_Warning(); 
             }
