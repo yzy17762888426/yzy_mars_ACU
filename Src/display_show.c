@@ -4,6 +4,7 @@
 #include "main.h"
 #include "flash.h"
 #include "flex.h"
+#include "get_maf.h"
 #include "stdio.h"
 #include "string.h"
 
@@ -421,7 +422,7 @@ void Refresh_Setting(void)
     case OUT_AUTOSET_CMD:
     {
         uint16_t prev_dac = (uint16_t)(DAC->DOR1);
-        Set_DAC1(3102);                 // 2.5V / 3.3V * 4095 ≈ 3102
+        Set_DAC1(2048);                 // 2.5V / 3.3V * 4095 ≈ 3102
         HAL_Delay(50);                  // 等待 DAC 输出稳定
 
         uint32_t sum = 0;
@@ -438,9 +439,10 @@ void Refresh_Setting(void)
         sum -= adc_min;
         sum -= adc_max;
         uint16_t avg = (uint16_t)(sum / 18);
-        if (avg != 0)
+        uint16_t mv = Get_Mv_Maf_FromAdc(avg);
+        if (mv != 0)
         {
-            DataPacket_Type.ETH_ADJ = (uint16_t)((uint64_t)2500UL * 40950000UL / ((uint64_t)3300UL * avg));
+            DataPacket_Type.ETH_ADJ = (uint16_t)((uint64_t)2500UL * 10000UL / mv);
             Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
             Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
         }

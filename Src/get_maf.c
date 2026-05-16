@@ -12,9 +12,14 @@ static uint16_t freq_show = 0;
 extern DataPacket_Struct Show_DataPacketType;
 
 // MAF 毫伏输入 → 显示值(uint64 防溢出)
+uint16_t Get_Mv_Maf_FromAdc(uint16_t adc)
+{
+    return (uint16_t)(((uint64_t)Show_DataPacketType.MAF_ADJ * 3300U * adc * 156) / (40950000U * 100));
+}
+
 static uint16_t Get_Mv_Maf(void)
 {
-    return (uint16_t)(((uint64_t)Show_DataPacketType.MAF_ADJ * 3300U * ADvalue[CH_MAF_MV] * 156) / (40950000U * 100));
+    return Get_Mv_Maf_FromAdc(ADvalue[CH_MAF_MV]);
 }
 
 void GetFreqHz_Task(void)
