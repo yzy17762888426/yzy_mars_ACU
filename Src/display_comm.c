@@ -226,6 +226,8 @@ void Comm_unpack(void)
             break;
         case V_AUTOSET_CMD:
             break;
+        case OUT_AUTOSET_CMD:
+            break;
         case SPRAY_CMD:
             DataPacket_Type.SPRAYMAIN = comm_buffer[2] ? 1 : 0;
             break;
@@ -310,6 +312,8 @@ void Esp_unpack(void)
             DataPacket_Type.EX_AUTO = esp_buffer[2] ? 1 : 0;
             break;
         case V_AUTOSET_CMD:
+            break;
+        case OUT_AUTOSET_CMD:
             break;
         case SPRAY_CMD:
             DataPacket_Type.SPRAYMAIN = esp_buffer[2] ? 1 : 0;

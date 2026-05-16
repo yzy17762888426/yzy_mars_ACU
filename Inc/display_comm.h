@@ -24,7 +24,7 @@
 #define LOG_STOP_CMD                0xFB14  // 停止 LOG 记录Z
 #define AT_MT_CMD                   0xFC15  // 排气 AT/MT 模式切换: 0=MT, 1=AT
 #define V_AUTOSET_CMD               0xFD16  // MAF 电压自动校准(输入5V标准电压)
-#define OUT_AUTOSET_CMD             0xFE17  // 预留
+#define OUT_AUTOSET_CMD             0xFE17  // DAC 自动校准: DAC1 输出 2.5V 短接 maf_v 读取
 
 // MAF 显示模式(Hz_Mv 字段使用)
 #define HZ_MODE             0x00    // 频率模式
@@ -80,7 +80,7 @@ typedef struct
 
     /* 出厂调校 */
     uint16_t MAF_ADJ;       // MAF 电压校准
-    uint16_t ETH_ADJ;       // 乙醇校准
+    uint16_t ETH_ADJ;       // DAC1 校准系数(×/10000)
     uint16_t AFR_ADJ;       // 空燃比校准
     uint16_t LEVEL1_VAL;    // 液位 1 阈值
     uint16_t LEVEL2_VAL;    // 液位 2 阈值

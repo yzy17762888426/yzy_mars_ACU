@@ -418,6 +418,36 @@ void Refresh_Setting(void)
         NEX_VAL("mafvadj", Show_DataPacketType.MAF_ADJ);
         break;
     }
+    case OUT_AUTOSET_CMD:
+    {
+        uint16_t prev_dac = (uint16_t)(DAC->DOR1);
+        Set_DAC1(3102);                 // 2.5V / 3.3V * 4095 ≈ 3102
+        HAL_Delay(50);                  // 等待 DAC 输出稳定
+
+        uint32_t sum = 0;
+        uint16_t adc_min = 0xFFFF;
+        uint16_t adc_max = 0;
+        for (uint8_t i = 0; i < 20; i++)
+        {
+            uint16_t adc = ADvalue[CH_MAF_MV];
+            sum += adc;
+            if (adc < adc_min) adc_min = adc;
+            if (adc > adc_max) adc_max = adc;
+            HAL_Delay(1);
+        }
+        sum -= adc_min;
+        sum -= adc_max;
+        uint16_t avg = (uint16_t)(sum / 18);
+        if (avg != 0)
+        {
+            DataPacket_Type.ETH_ADJ = (uint16_t)((uint64_t)2500UL * 40950000UL / ((uint64_t)3300UL * avg));
+            Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
+            Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
+        }
+        NEX_VAL("ethvadj", Show_DataPacketType.ETH_ADJ);
+        Set_DAC1(prev_dac);             // 恢复 DAC1 之前的状态
+        break;
+    }
     case EX_CMD:
         NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
         break;
