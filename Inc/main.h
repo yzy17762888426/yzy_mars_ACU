@@ -81,7 +81,7 @@ extern uint16_t ADvalue[ADC_CH_COUNT];
 
 #define AD_LIGHT_SENS ADvalue[CH_LIGHT_SENS]
 #define AD_PUMP1_CUR  ADvalue[CH_PUMP1_CUR]
-#define AD_BAT_VOLT   ADvalue[CH_BAT_VOLT]
+#define AD_BAT_VOLT   ADvalue[CH_BAT_VOLT] * 5
 #define AD_PUMP2_CUR  ADvalue[CH_PUMP2_CUR]
 #define AD_RESERVE_C4 ADvalue[CH_RESERVE_C4]
 #define AD_LIQUID_LVL ADvalue[CH_LIQUID_LVL]

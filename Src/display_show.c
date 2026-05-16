@@ -19,11 +19,11 @@
 
 #define NEX_END        "\xff\xff\xff"
 
-#define NEX_VAL(name, v)       do { printf(name ".val=%d" NEX_END, (int)(v));          HAL_Delay(10); } while (0)
-#define NEX_TXT(name, t)       do { printf(name ".txt=\"%s\"" NEX_END, (t));           HAL_Delay(10); } while (0)
-#define NEX_TXT_INT(name, v)   do { printf(name ".txt=\"%d\"" NEX_END, (int)(v));      HAL_Delay(10); } while (0)
-#define NEX_PIC(name, p)       do { printf(name ".pic=%d" NEX_END, (int)(p));          HAL_Delay(10); } while (0)
-#define NEX_VIS(obj, on)       do { printf("vis " obj ",%d" NEX_END, (on) ? 1 : 0);   HAL_Delay(10); } while (0)
+#define NEX_VAL(name, v)       do { printf(name ".val=%d" NEX_END, (int)(v));          HAL_Delay(1); } while (0)
+#define NEX_TXT(name, t)       do { printf(name ".txt=\"%s\"" NEX_END, (t));           HAL_Delay(1); } while (0)
+#define NEX_TXT_INT(name, v)   do { printf(name ".txt=\"%d\"" NEX_END, (int)(v));      HAL_Delay(1); } while (0)
+#define NEX_PIC(name, p)       do { printf(name ".pic=%d" NEX_END, (int)(p));          HAL_Delay(1); } while (0)
+#define NEX_VIS(obj, on)       do { printf("vis " obj ",%d" NEX_END, (on) ? 1 : 0);   HAL_Delay(1); } while (0)
 #define NEX_PAGE(name, ms)     do { printf("page " name NEX_END); HAL_Delay(ms); } while (0)
 
 /*------------------------------------------------------------------------------
@@ -56,7 +56,7 @@ void Flash_Init(void)
  *----------------------------------------------------------------------------*/
 void Display_StartPage(void)
 {
-    NEX_PAGE("page0", 50);
+    NEX_PAGE("page0", 5);
 
     // 起跳 / 满量
     NEX_TXT_INT("startValueShow",  Show_DataPacketType.START1);
@@ -258,9 +258,9 @@ void Display_BackgroundSetting(void)
  *  lowIco   — 电瓶欠压(ADC < BAT_ADC_LOW)
  *  三个图标同位置,多告警时轮流显示
  *----------------------------------------------------------------------------*/
-#define BAT_ADC_HIGH    3500
-#define BAT_ADC_LOW     2400
-#define LIQUID_LOW      2600
+#define BAT_ADC_HIGH    14800
+#define BAT_ADC_LOW     11000
+#define LIQUID_LOW      1500
 
 static const char * const warn_icons[] = {"FluidIco", "hiIco", "lowIco"};
 static uint8_t  warn_shown = 0xFF;
