@@ -1,5 +1,6 @@
 #include "display_comm.h"
 #include "main.h"
+#include "flex.h"
 #include <string.h>
 
 extern UART_HandleTypeDef huart2;
@@ -228,6 +229,12 @@ void Comm_unpack(void)
             break;
         case OUT_AUTOSET_CMD:
             break;
+        case DAC1_OUT_CMD:
+            Set_DAC1(buf_u16_le(comm_buffer, 2));
+            break;
+        case DAC2_OUT_CMD:
+            Set_DAC2(buf_u16_le(comm_buffer, 2));
+            break;
         case SPRAY_CMD:
             DataPacket_Type.SPRAYMAIN = comm_buffer[2] ? 1 : 0;
             break;
@@ -314,6 +321,12 @@ void Esp_unpack(void)
         case V_AUTOSET_CMD:
             break;
         case OUT_AUTOSET_CMD:
+            break;
+        case DAC1_OUT_CMD:
+            Set_DAC1(buf_u16_le(esp_buffer, 2));
+            break;
+        case DAC2_OUT_CMD:
+            Set_DAC2(buf_u16_le(esp_buffer, 2));
             break;
         case SPRAY_CMD:
             DataPacket_Type.SPRAYMAIN = esp_buffer[2] ? 1 : 0;

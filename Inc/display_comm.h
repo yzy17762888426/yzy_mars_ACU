@@ -25,6 +25,8 @@
 #define AT_MT_CMD                   0xFC15  // 排气 AT/MT 模式切换: 0=MT, 1=AT
 #define V_AUTOSET_CMD               0xFD16  // MAF 电压自动校准(输入5V标准电压)
 #define OUT_AUTOSET_CMD             0xFE17  // DAC 自动校准: DAC1 输出 2.5V 短接 maf_v 读取
+#define DAC1_OUT_CMD                0xFA50  // DAC1 直接输出 (payload: uint16 DAC值)
+#define DAC2_OUT_CMD                0xFAA1  // DAC2 直接输出 (payload: uint16 DAC值)
 
 // MAF 显示模式(Hz_Mv 字段使用)
 #define HZ_MODE             0x00    // 频率模式
