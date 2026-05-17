@@ -20,6 +20,11 @@ static uint8_t  pa1_duty        = 0;   // 0~100 %
 static uint16_t pa1_freq        = 0;   // Hz
 static uint16_t pa1_ethanol     = 0;   // 0.1 % 单位, 0~1000
 static int16_t  pa1_temp_x10    = 0;   // 0.1 °C 单位
+static uint32_t pa1_ethanol_sum = 0;   // EMA 滤波累加 (×4)
+static int32_t  pa1_temp_sum    = 0;   // EMA 滤波累加 (×4)
+static uint16_t raw_eth;
+static int16_t  raw_temp;
+static uint32_t low_cnt;
 
 void PA1_Sample(void)
 {
@@ -36,21 +41,30 @@ void PA1_Sample(void)
         pa1_duty = (uint8_t)((uint32_t)pa1_high_cnt * 100U / PA1_WINDOW_MS);
         pa1_freq = pa1_rising_cnt / (PA1_WINDOW_MS / 1000U);
 
-        // 乙醇含量 0.1% = 频率0.1Hz - 500, 限幅 0~1000
-        if (pa1_rising_cnt <= 500)       pa1_ethanol = 0;
-        else if (pa1_rising_cnt >= 1500) pa1_ethanol = 1000;
-        else                             pa1_ethanol = pa1_rising_cnt - 500;
+        // 乙醇含量原始值
+        if (pa1_rising_cnt <= 500)       raw_eth = 0;
+        else if (pa1_rising_cnt >= 1500) raw_eth = 1000;
+        else                             raw_eth = pa1_rising_cnt - 500;
 
-        // 燃油温度 = 41.5 * 低脉宽(ms) - 81.25 → T_x10 = 415 * low_cnt / rising_cnt - 813
+        // 温度原始值
         if (pa1_rising_cnt > 0)
         {
-            uint32_t low_cnt = PA1_WINDOW_MS - pa1_high_cnt;
-            pa1_temp_x10 = (int16_t)(415U * low_cnt / pa1_rising_cnt) - 813;
+            low_cnt = PA1_WINDOW_MS - pa1_high_cnt;
+            raw_temp = (int16_t)(415U * low_cnt / pa1_rising_cnt) - 813;
         }
         else
         {
-            pa1_temp_x10 = 0;
+            raw_temp = 0;
         }
+
+        // EMA 滤波: new = (old * 3 + raw) / 4
+        pa1_ethanol_sum = pa1_ethanol_sum * 3 + (uint32_t)raw_eth * 4;
+        pa1_ethanol_sum /= 4;
+        pa1_ethanol = (uint16_t)(pa1_ethanol_sum / 4);
+
+        pa1_temp_sum = pa1_temp_sum * 3 + (int32_t)raw_temp * 4;
+        pa1_temp_sum /= 4;
+        pa1_temp_x10 = (int16_t)(pa1_temp_sum / 4);
 
         pa1_high_cnt   = 0;
         pa1_rising_cnt = 0;
@@ -139,14 +153,25 @@ void Flex_DAC_Out(void)
 
     // 乙醇含量显示 (0.1% → X.X%)
     uint16_t eth_show = Get_Flex_Ethanol();
-    printf("eValueShow.txt=\"%d.%d\"" NEX_END, eth_show / 10, eth_show % 10);
+    // 频率不在 50~150 Hz 范围 → 传感器未插入
+    if (pa1_freq < 50 || pa1_freq > 150)
+        printf("eValueShow.txt=\"-\"" NEX_END);
+    else
+        printf("eValueShow.txt=\"%d.%d\"" NEX_END, eth_show / 10, eth_show % 10);
 
     // 乙醇温度显示 (0.1°C 单位, TEMP_UINT=0→℃ 1→℉)
-    int16_t temp = Get_Flex_Temp_x10();
-    if (!Show_DataPacketType.TEMP_UINT)
-        temp = (int16_t)((int32_t)temp * 18 / 10 + 320);
-    if (temp >= 0)
-        printf("tValueShow.txt=\"%d.%d\"" NEX_END, temp / 10, temp % 10);
+    if (pa1_freq < 50 || pa1_freq > 150)
+    {
+        printf("tValueShow.txt=\"-\"" NEX_END);
+    }
     else
-        printf("tValueShow.txt=\"-%d.%d\"" NEX_END, (-temp) / 10, (-temp) % 10);
+    {
+        int16_t temp = Get_Flex_Temp_x10();
+        if (!Show_DataPacketType.TEMP_UINT)
+            temp = (int16_t)((int32_t)temp * 18 / 10 + 320);
+        if (temp >= 0)
+            printf("tValueShow.txt=\"%d.%d\"" NEX_END, temp / 10, temp % 10);
+        else
+            printf("tValueShow.txt=\"-%d.%d\"" NEX_END, (-temp) / 10, (-temp) % 10);
+    }
 }
