@@ -138,10 +138,7 @@ void Flex_DAC_Out(void)
 
     // 乙醇插值 + DAC校准，先乘加后统一除，四舍五入
     // dac1 = (FLEX0*1000 + eth*(FLEX100-FLEX0)) * ETH_ADJ / 10000000
-    int64_t dac_raw = (int64_t)Show_DataPacketType.FLEX0 * 1000LL
-                    + (int64_t)eth * (Show_DataPacketType.FLEX100 - Show_DataPacketType.FLEX0);
-    dac_raw = dac_raw * Show_DataPacketType.ETH_ADJ + 5000000LL;
-    int32_t dac1 = (int32_t)(dac_raw / 10000000LL);
+    int16_t dac1 = (Show_DataPacketType.FLEX0 + eth * (Show_DataPacketType.FLEX100 - Show_DataPacketType.FLEX0)) * Show_DataPacketType.ETH_ADJ / 10000;
     if (dac1 < 0)     dac1 = 0;
     if (dac1 > 4095)  dac1 = 4095;
 
@@ -149,7 +146,7 @@ void Flex_DAC_Out(void)
     // if (dac2 < 0)     dac2 = 0;
     // if (dac2 > 4095)  dac2 = 4095;
 
-//    Set_DAC1((uint16_t)dac1);
+    Set_DAC1(dac1);
 //    Set_DAC2((uint16_t)dac2);
 
     // 乙醇含量显示 (0.1% → X.X%)
