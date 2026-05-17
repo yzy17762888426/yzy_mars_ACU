@@ -17,7 +17,7 @@ uint16_t Get_Mv_Maf_FromAdc(uint16_t adc)
     return (uint16_t)(((uint64_t)Show_DataPacketType.MAF_ADJ * 3300U * adc * 156) / (40950000U * 100));
 }
 
-static uint16_t Get_Mv_Maf(void)
+uint16_t Get_Mv_Maf(void)
 {
     return Get_Mv_Maf_FromAdc(ADvalue[CH_MAF_MV]);
 }

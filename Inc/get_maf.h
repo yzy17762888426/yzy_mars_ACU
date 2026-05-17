@@ -14,4 +14,7 @@ uint16_t GetFreqShow(void);
 // MAF ADC → 校准后毫伏值
 uint16_t Get_Mv_Maf_FromAdc(uint16_t adc);
 
+// 当前 MAF 通道的校准后毫伏值
+uint16_t Get_Mv_Maf(void);
+
 #endif

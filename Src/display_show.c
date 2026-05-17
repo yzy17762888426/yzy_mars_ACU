@@ -362,6 +362,64 @@ static void TestPumpOutput(void)
 }
 
 /*------------------------------------------------------------------------------
+ * MAF / DAC 自动校准
+ *----------------------------------------------------------------------------*/
+static void MAF_AutoCal(void)
+{
+    uint32_t sum = 0;
+    uint16_t adc_min = 0xFFFF;
+    uint16_t adc_max = 0;
+    for (uint8_t i = 0; i < 20; i++)
+    {
+        uint16_t adc = (uint16_t)(((uint64_t)3300U * ADvalue[CH_MAF_MV] * 156) / (4095U * 100));//
+        sum += adc;
+        if (adc < adc_min) adc_min = adc;
+        if (adc > adc_max) adc_max = adc;
+        HAL_Delay(1);
+    }
+    sum -= adc_min;
+    sum -= adc_max;
+    uint16_t avg = (uint16_t)(sum / 18);
+    if (avg != 0)
+    {
+        DataPacket_Type.MAF_ADJ = 50000000/ avg;
+        Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
+        Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
+    }
+    NEX_VAL("mafvadj", Show_DataPacketType.MAF_ADJ);
+}
+
+static void DAC_AutoCal(void)
+{
+    Set_DAC1(2048);
+    HAL_Delay(50);
+
+    uint32_t sum = 0;
+    uint16_t adc_min = 0xFFFF;
+    uint16_t adc_max = 0;
+    for (uint8_t i = 0; i < 20; i++)
+    {
+        uint16_t adc = Get_Mv_Maf();
+        sum += adc;
+        if (adc < adc_min) adc_min = adc;
+        if (adc > adc_max) adc_max = adc;
+        HAL_Delay(1);
+    }
+    sum -= adc_min;
+    sum -= adc_max;
+    uint16_t avg = (uint16_t)(sum / 18);
+
+    if (avg != 0)
+    {
+        DataPacket_Type.ETH_ADJ = 25000000 / avg;
+        Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
+        Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
+    }
+    NEX_VAL("ethvadj", Show_DataPacketType.ETH_ADJ);
+    Set_DAC1(0);
+}
+
+/*------------------------------------------------------------------------------
  * 设置同步:屏幕下发 → Flash + 本地缓存
  *----------------------------------------------------------------------------*/
 void Refresh_Setting(void)
@@ -395,60 +453,11 @@ void Refresh_Setting(void)
             TestPumpOutput();
         break;
     case V_AUTOSET_CMD:
-    {
-        uint32_t sum = 0;
-        uint16_t adc_min = 0xFFFF;
-        uint16_t adc_max = 0;
-        for (uint8_t i = 0; i < 20; i++)
-        {
-            uint16_t adc = ADvalue[CH_MAF_MV];
-            sum += adc;
-            if (adc < adc_min) adc_min = adc;
-            if (adc > adc_max) adc_max = adc;
-            HAL_Delay(1);
-        }
-        sum -= adc_min;
-        sum -= adc_max;
-        uint16_t avg = (uint16_t)(sum / 18);
-        if (avg != 0)
-        {
-            DataPacket_Type.MAF_ADJ = (uint16_t)((uint64_t)5000UL * 40950000UL / ((uint64_t)3300UL * avg));
-            Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
-            Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
-        }
-        NEX_VAL("mafvadj", Show_DataPacketType.MAF_ADJ);
+        MAF_AutoCal();
         break;
-    }
     case OUT_AUTOSET_CMD:
-    {
-        Set_DAC1(2048);
-        HAL_Delay(50);
-
-        uint32_t sum = 0;
-        uint16_t adc_min = 0xFFFF;
-        uint16_t adc_max = 0;
-        for (uint8_t i = 0; i < 20; i++)
-        {
-            uint16_t adc = ADvalue[CH_MAF_MV];
-            sum += adc;
-            if (adc < adc_min) adc_min = adc;
-            if (adc > adc_max) adc_max = adc;
-            HAL_Delay(1);
-        }
-        sum -= adc_min;
-        sum -= adc_max;
-        uint16_t avg = (uint16_t)(sum / 18);
-        uint16_t mv = Get_Mv_Maf_FromAdc(avg);
-        if (mv != 0)
-        {
-            DataPacket_Type.ETH_ADJ = (uint16_t)((uint64_t)2500UL * 10000UL / mv);
-            Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
-            Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
-        }
-        NEX_VAL("ethvadj", Show_DataPacketType.ETH_ADJ);
-        Set_DAC1(0);
+        DAC_AutoCal();
         break;
-    }
     case EX_CMD:
         NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
         break;
@@ -472,8 +481,6 @@ void Refresh_Setting(void)
     case FACTORY_MODE_CMD:
         SetMode(FACTORY_MODE);
         NEX_PAGE("FactorySetting", 50);
-        Set_DAC1(4095);
-        Set_DAC2(4095);
         break;
     case FACTORY_SAVE_CMD:
         test_en = 0;

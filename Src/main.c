@@ -95,7 +95,8 @@ int main(void)
         }
         else if (mode == FACTORY_MODE)
         {
-            Display_FactoryPage();
+            if (tick % 500 == 50)
+                Display_FactoryPage();
         }
 
         Display_BackgroundSetting();
