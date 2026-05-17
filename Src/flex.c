@@ -136,11 +136,12 @@ void Flex_DAC_Out(void)
 {
     uint16_t eth = Get_Flex_Ethanol();  // 0~1000 (0.1% 单位)
 
-    int32_t base = (int32_t)Show_DataPacketType.FLEX0 +
-                   (int32_t)eth * ((int32_t)Show_DataPacketType.FLEX100 -
-                                   (int32_t)Show_DataPacketType.FLEX0) / 1000;
-
-    int32_t dac1 = (int32_t)((int64_t)base * Show_DataPacketType.ETH_ADJ / 10000);
+    // 乙醇插值 + DAC校准，先乘加后统一除，四舍五入
+    // dac1 = (FLEX0*1000 + eth*(FLEX100-FLEX0)) * ETH_ADJ / 10000000
+    int64_t dac_raw = (int64_t)Show_DataPacketType.FLEX0 * 1000LL
+                    + (int64_t)eth * (Show_DataPacketType.FLEX100 - Show_DataPacketType.FLEX0);
+    dac_raw = dac_raw * Show_DataPacketType.ETH_ADJ + 5000000LL;
+    int32_t dac1 = (int32_t)(dac_raw / 10000000LL);
     if (dac1 < 0)     dac1 = 0;
     if (dac1 > 4095)  dac1 = 4095;
 

@@ -476,8 +476,8 @@ setInterval(function(){
     // Status
     exAuto=(d.exm==='AT');
     if(exAuto){
-      $('vEx').innerText='AT MODE';
-      $('vEx').style.color='#4caf50';
+      $('vEx').innerText='AT '+(d.exv?'OPEN':'CLOSED');
+      $('vEx').style.color=d.exv?'#4caf50':'#f44336';
       $('btnEx').classList.add('disabled');
     }else{
       $('vEx').innerText='MT '+(d.exv?'OPEN':'CLOSED');
@@ -683,7 +683,7 @@ void handleStartRecord() {
 void handleStopRecord() {
   isLogging = false;
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, "text/csv", "Time(ms),MAF,PumpA(%),PumpB(%)\n");
+  server.send(200, "text/csv", "Time(ms),MAF,PumpA(%),PumpB(%),ExValve\n");
   int start = (recordHead - recordCount + MAX_RECORDS) % MAX_RECORDS;
   for (int i = 0; i < recordCount; i++)
     server.sendContent(logData[(start + i) % MAX_RECORDS]);
@@ -713,8 +713,8 @@ void loop() {
   static unsigned long lastRec = 0;
   if (isLogging && millis() - lastRec >= 100) {
     lastRec = millis();
-    snprintf(logData[recordHead], LOG_ENTRY_SIZE, "%lu,%d,%d,%d\n",
-      millis(), g_maf, g_p1_duty, g_p2_duty);
+    snprintf(logData[recordHead], LOG_ENTRY_SIZE, "%lu,%d,%d,%d,%d\n",
+      millis(), g_maf, g_p1_duty, g_p2_duty, g_ex_valve);
     recordHead = (recordHead + 1) % MAX_RECORDS;
     if (recordCount < MAX_RECORDS) recordCount++;
   }
