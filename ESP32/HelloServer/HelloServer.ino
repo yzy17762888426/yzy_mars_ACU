@@ -27,6 +27,7 @@ static int8_t  g_p1_en     = 0;          // Pump1Stat.pic  9=on
 static int8_t  g_p2_en     = 0;          // Pump2Stat.pic
 static int8_t  g_ex_valve  = 0;          // ExStat.pic
 static int8_t  g_spray     = 0;          // RainStat.pic
+static int8_t  g_spray_en  = 0;          // rainSwith.aph → 1=enabled, 0=disabled
 static char    g_ex_mode[4]= "AT";       // valueStaus.txt
 static int8_t  g_ex_auto   = 1;          // EX_AUTO: 1=AT, 0=MT
 static int16_t g_p1_start  = 0;          // startValueShow.txt
@@ -169,6 +170,10 @@ static void parseCmd(const String &cmd) {
     else if (name == "Pump2Stat") g_p2_en    = (v == 9);
     else if (name == "RainStat")  g_spray    = (v == 9);
     else if (name == "ATMT")    { g_ex_auto = (v == 17); strncpy(g_ex_mode, g_ex_auto ? "AT" : "MT", 3); g_ex_mode[3] = 0; }
+  }
+  else if (prop.startsWith("aph=")) {
+    int v = prop.substring(4).toInt();
+    if (name == "rainSwith")  g_spray_en = (v >= 127) ? 1 : 0;
   }
 }
 
@@ -327,8 +332,10 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
   </div>
   <div class="cd">
     <div class="sec">STATUS</div>
-    <div class="row"><span class="lbl">Exhaust</span><span id="vEx" class="val">AT MODE</span></div>
-    <div class="row"><span class="lbl">Spray</span><span id="vSp" class="val">OFF</span></div>
+    <div class="row"><span class="lbl">Exhaust Mode</span><span id="vExM" class="val">AT</span></div>
+    <div class="row"><span class="lbl"><span id="dEx" class="dt off"></span>Status</span><span id="vExS" class="val">CLOSED</span></div>
+    <div class="row"><span class="lbl">Spray Enable</span><span id="vSpE" class="val">OFF</span></div>
+    <div class="row"><span class="lbl"><span id="dSp" class="dt off"></span>Status</span><span id="vSpS" class="val">OFF</span></div>
   </div>
   <div class="cd">
     <div class="sec">THRESHOLD</div>
@@ -475,17 +482,18 @@ setInterval(function(){
     else $('vTmp').innerText='-';
     // Status
     exAuto=(d.exm==='AT');
-    if(exAuto){
-      $('vEx').innerText='AT '+(d.exv?'OPEN':'CLOSED');
-      $('vEx').style.color=d.exv?'#4caf50':'#f44336';
-      $('btnEx').classList.add('disabled');
-    }else{
-      $('vEx').innerText='MT '+(d.exv?'OPEN':'CLOSED');
-      $('vEx').style.color=d.exv?'#4caf50':'#f44336';
-      $('btnEx').classList.remove('disabled');
-    }
-    $('vSp').innerText=d.sp?'ON':'OFF';
-    $('vSp').style.color=d.sp?'#4caf50':'#666';
+    $('vExM').innerText=exAuto?'AT':'MT';
+    $('vExM').style.color='#ff9800';
+    $('dEx').className='dt '+(d.exv?'on':'off');
+    $('vExS').innerText=d.exv?'OPEN':'CLOSED';
+    $('vExS').style.color=d.exv?'#4caf50':'#f44336';
+    if(exAuto) $('btnEx').classList.add('disabled');
+    else $('btnEx').classList.remove('disabled');
+    $('vSpE').innerText=d.spe?'ON':'OFF';
+    $('vSpE').style.color=d.spe?'#4caf50':'#666';
+    $('dSp').className='dt '+(d.sp?'on':'off');
+    $('vSpS').innerText=d.sp?'ON':'OFF';
+    $('vSpS').style.color=d.sp?'#4caf50':'#666';
     $('vP1S').innerText=d.p1s+' '+d.unit;
     $('vP1F').innerText=d.p1f+' '+d.unit;
     $('vP2S').innerText=d.p2s+' '+d.unit;
@@ -593,7 +601,7 @@ void handleGetData() {
   j += "\"p1d\":" + String(g_p1_duty) + ",\"p2d\":" + String(g_p2_duty) + ",";
   j += "\"p1e\":" + String(g_p1_en) + ",\"p2e\":" + String(g_p2_en) + ",";
   j += "\"exm\":\"" + String(g_ex_mode) + "\",\"exv\":" + String(g_ex_valve) + ",";
-  j += "\"sp\":" + String(g_spray) + ",";
+  j += "\"sp\":" + String(g_spray) + ",\"spe\":" + String(g_spray_en) + ",";
   j += "\"p1s\":" + String(g_p1_start) + ",\"p1f\":" + String(g_p1_full) + ",";
   j += "\"p2s\":" + String(g_p2_start) + ",\"p2f\":" + String(g_p2_full) + ",";
   j += "\"spon\":" + String(g_sp_on) + ",\"spoff\":" + String(g_sp_off) + ",";

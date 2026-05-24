@@ -5,5 +5,6 @@
 
 void Spray_Init(void);
 void Spray_Task(void);
+uint8_t Spray_GetState(void);
 
 #endif

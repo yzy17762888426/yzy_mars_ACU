@@ -1,6 +1,7 @@
 #include "display_show.h"
 #include "display_comm.h"
 #include "exhaust.h"
+#include "spray.h"
 #include "main.h"
 #include "flash.h"
 #include "flex.h"
@@ -72,8 +73,10 @@ void Display_StartPage(void)
     // 状态图标
     NEX_PIC("Pump1Stat", Show_DataPacketType.PUMP1_EN  ? PIC_ON : PIC_OFF);
     NEX_PIC("Pump2Stat", Show_DataPacketType.PUMP2_EN  ? PIC_ON : PIC_OFF);
-    NEX_PIC("RainStat",  Show_DataPacketType.SPRAYMAIN ? PIC_ON : PIC_OFF);
+    NEX_PIC("RainStat",  Spray_GetState() ? PIC_ON : PIC_OFF);
+    printf("rainSwith.aph=%d\xff\xff\xff", Show_DataPacketType.SPRAYMAIN ? 127 : 50);
     NEX_PIC("ExStat",    ExhaustValve_GetState() ? PIC_ON : PIC_OFF);
+    printf("chimneySwitch.aph=%d\xff\xff\xff", Show_DataPacketType.EX_AUTO ? 50 : 127);
 
     // 排气模式图标
     if (Show_DataPacketType.EX_AUTO)
@@ -303,7 +306,7 @@ void Display_Warning(void)
         warn_slot %= count;
         warn_shown = active[warn_slot++];
         printf("vis %s,1\xff\xff\xff", warn_icons[warn_shown]);
-        HAL_Delay(5);
+        HAL_Delay(2);
     }
     else
     {
@@ -459,7 +462,6 @@ void Refresh_Setting(void)
         DAC_AutoCal();
         break;
     case EX_CMD:
-        NEX_PIC("ExStat", Show_DataPacketType.EX_VAL ? PIC_ON : PIC_OFF);
         break;
     case AT_MT_CMD:
         //NEX_TXT("valueStaus", Show_DataPacketType.EX_AUTO ? "AT" : "MT");
@@ -473,10 +475,9 @@ void Refresh_Setting(void)
             printf("ATMT.pic=%d\xff\xff\xff",MT_PIC);
             printf("ATMT.pic2=%d\xff\xff\xff",MT_PIC);
         }
-
+        printf("chimneySwitch.aph=%d\xff\xff\xff", Show_DataPacketType.EX_AUTO ? 50 : 127);
         break;
     case SPRAY_CMD:
-        NEX_PIC("RainStat", Show_DataPacketType.SPRAYMAIN ? PIC_ON : PIC_OFF);
         break;
     case FACTORY_MODE_CMD:
         SetMode(FACTORY_MODE);

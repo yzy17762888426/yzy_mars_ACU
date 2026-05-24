@@ -21,7 +21,12 @@ static volatile uint32_t close_delay_start  = 0;
 
 uint8_t ExhaustValve_GetState(void)
 {
-    return valve_open;
+    GPIO_PinState pin = HAL_GPIO_ReadPin(EX_PORT, EX_PIN);
+    // EX_REV=0: HIGH=开; EX_REV=1: LOW=开
+    if (Show_DataPacketType.EX_REV)
+        return pin == GPIO_PIN_RESET ? 1 : 0;
+    else
+        return pin == GPIO_PIN_SET ? 1 : 0;
 }
 
 static void Ex_WritePin(uint8_t open)
@@ -87,7 +92,10 @@ void ExhaustValve_Task(void)
 
     Ex_WritePin(valve_open);
 
-    // 状态灯: 反映阀门实际状态 (log期间不发)
+    // 状态灯: 反映阀门实际IO状态, exswitch透明度 (log期间不发)
     if (!log_en)
-        NEX_PIC("ExStat", valve_open ? PIC_ON : PIC_OFF);
+    {
+        NEX_PIC("ExStat", ExhaustValve_GetState() ? PIC_ON : PIC_OFF);
+        printf("chimneySwitch.aph=%d\xff\xff\xff", Show_DataPacketType.EX_AUTO ? 50 : 127);
+    }
 }
