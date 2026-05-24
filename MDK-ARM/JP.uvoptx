@@ -545,6 +545,11 @@
           <WinNumber>1</WinNumber>
           <ItemText>mode</ItemText>
         </Ww>
+        <Ww>
+          <count>79</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>DataPacket_Type,0x0A</ItemText>
+        </Ww>
       </WatchWindow1>
       <MemoryWindow1>
         <Mm>

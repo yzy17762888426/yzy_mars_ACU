@@ -73,13 +73,14 @@ static int16_t g_s_testen  = 0;          // testCmd.val
 static int8_t  g_page     = 0;          // 0=main 1=setting
 
 /* ---- 数据记录 (环形缓冲区, 固定 char 数组避免堆碎片) ---- */
-#define LOG_ENTRY_SIZE 32
+#define LOG_ENTRY_SIZE 24
 #define MAX_RECORDS 6000
 char   logData[MAX_RECORDS][LOG_ENTRY_SIZE];
 int    recordHead = 0;   // 下一条写入位置
 int    recordCount = 0;  // 已存储条数 (最大 MAX_RECORDS)
 bool   isLogging   = false;
 unsigned long startTime = 0;
+static uint8_t recPumpEn = 0;  // bit0=PumpA, bit1=PumpB (记录开始时锁定)
 
 /* ========================================================================
  * 串口解析 — Nextion 协议 (\xff\xff\xff 结尾)
@@ -370,6 +371,11 @@ html,body{width:100%;min-height:100%;font-family:'Segoe UI',Roboto,sans-serif;ba
   </div>
   <div class="foot">LIVE UPDATE 200ms</div>
 </div>
+<div id="dlOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:99;justify-content:center;align-items:center;flex-direction:column">
+  <div style="width:40px;height:40px;border:4px solid #333;border-top-color:#ff9800;border-radius:50%;animation:sp .8s linear infinite;margin-bottom:16px"></div>
+  <div id="dlText" style="color:#fff;font-size:15px;font-weight:700">Downloading... 0 KB</div>
+  <style>@keyframes sp{to{transform:rotate(360deg)}}</style>
+</div>
 
 <!-- ===== PAGE 1: 设置 ===== -->
 <div id="p1" class="pg">
@@ -563,13 +569,21 @@ function saveSetting(){
   alert('Setting saved!');
 }
 function stopRec(){
+  var ov=$('dlOverlay'),txt=$('dlText');
+  ov.style.display='flex';txt.innerText='Downloading... 0 KB';
   var x=new XMLHttpRequest();
+  x.onprogress=function(){
+    var kb=(x.responseText.length/1024).toFixed(0);
+    txt.innerText='Downloading... '+kb+' KB';
+  };
   x.onload=function(){
+    ov.style.display='none';
     var b=new Blob([this.responseText],{type:'text/csv'}),u=URL.createObjectURL(b),a=document.createElement('a');
     a.href=u;a.download='acu_log.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
     $('btnLogStart').classList.remove('disabled');
     $('btnLogStop').classList.add('disabled');
   };
+  x.onerror=function(){ov.style.display='none';};
   x.open('GET','/stopRecord',true);x.send();
 }
 function startRec(){
@@ -670,6 +684,7 @@ void handleCmd() {
   else if (type == "logstart") {
     recordHead = 0;
     recordCount = 0;
+    recPumpEn = (g_p1_en ? 1 : 0) | (g_p2_en ? 2 : 0);
     isLogging = true;
     startTime = millis();
   }
@@ -690,8 +705,12 @@ void handleStartRecord() {
 
 void handleStopRecord() {
   isLogging = false;
+  String hdr = "Time(ms),MAF";
+  if (recPumpEn & 1) hdr += ",PumpA(%)";
+  if (recPumpEn & 2) hdr += ",PumpB(%)";
+  hdr += ",ExValve\n";
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.send(200, "text/csv", "Time(ms),MAF,PumpA(%),PumpB(%),ExValve\n");
+  server.send(200, "text/csv", hdr);
   int start = (recordHead - recordCount + MAX_RECORDS) % MAX_RECORDS;
   for (int i = 0; i < recordCount; i++)
     server.sendContent(logData[(start + i) % MAX_RECORDS]);
@@ -721,8 +740,11 @@ void loop() {
   static unsigned long lastRec = 0;
   if (isLogging && millis() - lastRec >= 100) {
     lastRec = millis();
-    snprintf(logData[recordHead], LOG_ENTRY_SIZE, "%lu,%d,%d,%d,%d\n",
-      millis(), g_maf, g_p1_duty, g_p2_duty, g_ex_valve);
+    int n = 0;
+    n = snprintf(logData[recordHead], LOG_ENTRY_SIZE, "%lu,%d", millis(), g_maf);
+    if (recPumpEn & 1) n += snprintf(logData[recordHead]+n, LOG_ENTRY_SIZE-n, ",%d", g_p1_duty);
+    if (recPumpEn & 2) n += snprintf(logData[recordHead]+n, LOG_ENTRY_SIZE-n, ",%d", g_p2_duty);
+    snprintf(logData[recordHead]+n, LOG_ENTRY_SIZE-n, ",%d\n", g_ex_valve);
     recordHead = (recordHead + 1) % MAX_RECORDS;
     if (recordCount < MAX_RECORDS) recordCount++;
   }
