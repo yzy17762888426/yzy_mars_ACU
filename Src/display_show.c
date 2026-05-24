@@ -33,6 +33,7 @@
  *----------------------------------------------------------------------------*/
 DataPacket_Struct Show_DataPacketType;
 static uint8_t Mode = NORMAL_MODE;
+static uint8_t last_dim = 0;
 
 /*------------------------------------------------------------------------------
  * Flash / 初始化
@@ -44,6 +45,9 @@ static void apply_adj_defaults(DataPacket_Struct *p)
     if (p->AFR_ADJ == 0xFFFF) p->AFR_ADJ = 10000;
     if (p->DAC1_ADJ == 0xFFFF) p->DAC1_ADJ = 10000;
     if (p->DAC2_ADJ == 0xFFFF) p->DAC2_ADJ = 10000;
+    if (p->LEVEL1_VAL == 0xFFFF) p->LEVEL1_VAL = 23;
+    if (p->LEVEL2_VAL == 0xFFFF) p->LEVEL2_VAL = 25;
+    if (p->LEVEL3_VAL == 0xFFFF) p->LEVEL3_VAL = 27;
 }
 
 void Flash_Init(void)
@@ -141,7 +145,7 @@ void Display_SettingPage(void)
     // 显示
     NEX_VAL("mafTypeSelect", Show_DataPacketType.Hz_Mv == MV_MODE ? 1 : 0);
     NEX_VAL("LightSen",      Show_DataPacketType.LightSen);
-    NEX_VAL("Bright",        Show_DataPacketType.Bright);
+    NEX_VAL("Bright",        last_dim);
 
     // MAF 标定
     NEX_VAL("flex0",   Show_DataPacketType.FLEX0);
@@ -167,6 +171,10 @@ void Display_SettingPage(void)
         printf("testCmd.val=0\xff\xff\xff");
     HAL_Delay(10);
     NEX_VAL("outSave", 0);
+
+    // Bright 框: LightSen!=0 时透明度50(不可编辑), =0时127(可编辑)
+    printf("Bright.aph=%d\xff\xff\xff", Show_DataPacketType.LightSen ? 50 : 127);
+    HAL_Delay(1);
 }
 
 /*------------------------------------------------------------------------------
@@ -204,30 +212,7 @@ static uint32_t factory_cal_tick = 0;
 
 void Display_FactoryPage(void)
 {
-    // 静态参数(每次进页发送)
-    NEX_VAL("mafvadj",     Show_DataPacketType.MAF_ADJ);
-    NEX_VAL("ethvadj",     Show_DataPacketType.ETH_ADJ);
-    NEX_VAL("afrvadj",     Show_DataPacketType.AFR_ADJ);
-
-    NEX_VAL("level1",      Show_DataPacketType.LEVEL1_VAL);
-    NEX_VAL("level2",      Show_DataPacketType.LEVEL2_VAL);
-    NEX_VAL("level3",      Show_DataPacketType.LEVEL3_VAL);
-
-    NEX_VAL("dac1_adj",    Show_DataPacketType.DAC1_ADJ);
-    NEX_VAL("dac2_adj",    Show_DataPacketType.DAC2_ADJ);
-
-    NEX_VAL("version",     SW_VERSION);
     NEX_VAL("lightsensor", ADvalue[CH_LIGHT_SENS]);
-
-    // 自动校准: 1s 刷新一次,读取当前 ADC 计算系数
-//    uint32_t now = HAL_GetTick();
-//    if (now - factory_cal_tick >= 1000)
-//    {
-//        factory_cal_tick = now;
-//        NEX_VAL("mafvadj", Cal_Coeff(AD_MAF_MV));
-//        NEX_VAL("ethvadj", Cal_Coeff(AD_RESERVE_B0));
-//        NEX_VAL("afrvadj", Cal_Coeff(AD_RESERVE_A0));
-//    }
 }
 
 /*------------------------------------------------------------------------------
@@ -235,23 +220,30 @@ void Display_FactoryPage(void)
  *  自动模式(LightSen≠0): ADC 光敏值线性映射 0~4095 → 0~100 %
  *  手动模式(LightSen==0): 直接使用 Bright 设定值
  *----------------------------------------------------------------------------*/
-static uint8_t last_dim = 0;
-
 void Display_BackgroundSetting(void)
 {
-    uint8_t dim;
+    int8_t dim;
+    uint16_t level;
 
-    if (Show_DataPacketType.LightSen != 0)
-        dim = (uint8_t)((uint32_t)AD_LIGHT_SENS * 100U / 4095U);
-    else
+    if (Show_DataPacketType.LightSen == 0)
+    {
         dim = (uint8_t)Show_DataPacketType.Bright;
+    }
+    else
+    {
+        if (Show_DataPacketType.LightSen == 1)      level = Show_DataPacketType.LEVEL1_VAL;
+        else if (Show_DataPacketType.LightSen == 2)  level = Show_DataPacketType.LEVEL2_VAL;
+        else                                         level = Show_DataPacketType.LEVEL3_VAL;
+        dim = (4095 - AD_LIGHT_SENS) * level / 1000;
+    }
 
-		if(dim<=5) dim=5;
+    if (dim > 100) dim = 100;
+    if (dim <= 5)  dim = 5;
     if (dim != last_dim)
     {
         last_dim = dim;
         printf("dim=%d\xff\xff\xff", dim);
-        HAL_Delay(10);
+        HAL_Delay(2);
     }
 }
 
@@ -482,6 +474,16 @@ void Refresh_Setting(void)
     case FACTORY_MODE_CMD:
         SetMode(FACTORY_MODE);
         NEX_PAGE("FactorySetting", 50);
+        NEX_VAL("mafvadj",     Show_DataPacketType.MAF_ADJ);
+        NEX_VAL("ethvadj",     Show_DataPacketType.ETH_ADJ);
+        NEX_VAL("afrvadj",     Show_DataPacketType.AFR_ADJ);
+        NEX_VAL("level1",      Show_DataPacketType.LEVEL1_VAL);
+        NEX_VAL("level2",      Show_DataPacketType.LEVEL2_VAL);
+        NEX_VAL("level3",      Show_DataPacketType.LEVEL3_VAL);
+        NEX_VAL("dac1_adj",    Show_DataPacketType.DAC1_ADJ);
+        NEX_VAL("dac2_adj",    Show_DataPacketType.DAC2_ADJ);
+        NEX_VAL("version",     SW_VERSION);
+        NEX_VAL("lightsensor", ADvalue[CH_LIGHT_SENS]);
         break;
     case FACTORY_SAVE_CMD:
         test_en = 0;

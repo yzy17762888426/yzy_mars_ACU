@@ -72,7 +72,7 @@ int main(void)
 
         if (mode == NORMAL_MODE || mode == TEST_MODE)
         {
-            if (tick % 100 == 10)
+            if (tick % 100 == 15)
             {
                 GetFreqHz_Task();
 								Log_Task();
@@ -84,11 +84,11 @@ int main(void)
                 B_MotorPump_Task();
                 ExhaustValve_Task();
             }
-            else if (tick % 100 == 80)
+            else if (tick % 100 == 75)
             {
                 Spray_Task();
             }
-            else if (tick % 1000 == 983)
+            else if (tick % 1000 == 95)
             {
                 Display_Warning(); 
             }

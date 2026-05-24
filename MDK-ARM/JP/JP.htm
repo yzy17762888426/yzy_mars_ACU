@@ -3,7 +3,7 @@
 <title>Static Call Graph - [JP\JP.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image JP\JP.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Sun May 24 15:28:17 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 6240002: Last Updated: Sun May 24 16:14:52 2026
 <BR><P>
 <H3>Maximum Stack Usage =        248 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -537,7 +537,7 @@ Global Symbols
 <P><STRONG><a name="[7]"></a>DebugMon_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32f1xx_it.o(.text.DebugMon_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f103xe.o(RESET)
 </UL>
-<P><STRONG><a name="[7e]"></a>Display_BackgroundSetting</STRONG> (Thumb, 148 bytes, Stack size 16 bytes, display_show.o(.text.Display_BackgroundSetting))
+<P><STRONG><a name="[7e]"></a>Display_BackgroundSetting</STRONG> (Thumb, 260 bytes, Stack size 16 bytes, display_show.o(.text.Display_BackgroundSetting))
 <BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = Display_BackgroundSetting &rArr; HAL_Delay
 </UL>
 <BR>[Calls]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
@@ -546,7 +546,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[7f]"></a>Display_FactoryPage</STRONG> (Thumb, 316 bytes, Stack size 8 bytes, display_show.o(.text.Display_FactoryPage))
+<P><STRONG><a name="[7f]"></a>Display_FactoryPage</STRONG> (Thumb, 36 bytes, Stack size 8 bytes, display_show.o(.text.Display_FactoryPage))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = Display_FactoryPage &rArr; HAL_Delay
 </UL>
 <BR>[Calls]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
@@ -555,7 +555,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[46]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[80]"></a>Display_SettingPage</STRONG> (Thumb, 858 bytes, Stack size 8 bytes, display_show.o(.text.Display_SettingPage))
+<P><STRONG><a name="[80]"></a>Display_SettingPage</STRONG> (Thumb, 894 bytes, Stack size 8 bytes, display_show.o(.text.Display_SettingPage))
 <BR><BR>[Stack]<UL><LI>Max Depth = 32<LI>Call Chain = Display_SettingPage &rArr; HAL_Delay
 </UL>
 <BR>[Calls]<UL><LI><a href="#[78]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_Delay
@@ -1394,7 +1394,7 @@ Global Symbols
 <P><STRONG><a name="[8]"></a>PendSV_Handler</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32f1xx_it.o(.text.PendSV_Handler))
 <BR>[Address Reference Count : 1]<UL><LI> startup_stm32f103xe.o(RESET)
 </UL>
-<P><STRONG><a name="[f3]"></a>Refresh_Setting</STRONG> (Thumb, 488 bytes, Stack size 32 bytes, display_show.o(.text.Refresh_Setting))
+<P><STRONG><a name="[f3]"></a>Refresh_Setting</STRONG> (Thumb, 800 bytes, Stack size 32 bytes, display_show.o(.text.Refresh_Setting))
 <BR><BR>[Stack]<UL><LI>Max Depth = 212<LI>Call Chain = Refresh_Setting &rArr; DAC_AutoCal &rArr; Flash_WriteSetting &rArr; STMFLASH_Write &rArr; STMFLASH_Write_NoCheck &rArr; HAL_FLASH_Program &rArr; FLASH_WaitForLastOperation &rArr; FLASH_SetErrorCode
 </UL>
 <BR>[Calls]<UL><LI><a href="#[7a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Flash_WriteSetting
@@ -1749,7 +1749,7 @@ Local Symbols
 <BR>[Called By]<UL><LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Esp_unpack
 </UL>
 
-<P><STRONG><a name="[99]"></a>apply_adj_defaults</STRONG> (Thumb, 128 bytes, Stack size 4 bytes, display_show.o(.text.apply_adj_defaults))
+<P><STRONG><a name="[99]"></a>apply_adj_defaults</STRONG> (Thumb, 194 bytes, Stack size 4 bytes, display_show.o(.text.apply_adj_defaults))
 <BR><BR>[Stack]<UL><LI>Max Depth = 4<LI>Call Chain = apply_adj_defaults
 </UL>
 <BR>[Called By]<UL><LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Flash_Init
