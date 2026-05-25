@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Y&M ACU 使用说明书</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#f5f5f5;color:#333;line-height:1.7}
+  .container{max-width:960px;margin:0 auto;background:#fff;box-shadow:0 0 20px rgba(0,0,0,.1)}
+  header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:40px 30px;text-align:center}
+  header h1{font-size:32px;margin-bottom:8px;letter-spacing:2px}
+  header p{color:#aaa;font-size:14px}
+  .badge{display:inline-block;background:#ff9800;color:#fff;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:12px}
+  nav{background:#fff;border-bottom:2px solid #eee;padding:15px 30px;position:sticky;top:0;z-index:10}
+  nav a{color:#555;text-decoration:none;margin-right:18px;font-size:14px;font-weight:600;padding:5px 0;border-bottom:2px solid transparent;transition:.2s}
+  nav a:hover{color:#ff9800;border-bottom-color:#ff9800}
+  section{padding:30px;border-bottom:1px solid #eee}
+  section:last-child{border-bottom:none}
+  h2{color:#1a1a2e;font-size:22px;margin-bottom:20px;padding-left:12px;border-left:4px solid #ff9800}
+  h3{color:#333;font-size:17px;margin:22px 0 12px}
+  p{margin-bottom:12px}
+  ul{padding-left:24px;margin-bottom:16px}
+  li{margin-bottom:8px}
+  .highlight-box{background:linear-gradient(135deg,#fff8e1,#fff3e0);border-left:4px solid #ff9800;padding:16px 20px;margin:16px 0;border-radius:0 8px 8px 0}
+  .warn-box{background:#ffebee;border-left:4px solid #f44336;padding:16px 20px;margin:16px 0;border-radius:0 8px 8px 0}
+  .info-box{background:#e3f2fd;border-left:4px solid #2196f3;padding:16px 20px;margin:16px 0;border-radius:0 8px 8px 0}
+  .ok-box{background:#e8f5e9;border-left:4px solid #4caf50;padding:16px 20px;margin:16px 0;border-radius:0 8px 8px 0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin:20px 0}
+  .card{background:#fff;border:1px solid #e0e0e0;border-radius:12px;padding:20px;transition:.2s}
+  .card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .card-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:12px}
+  .card h4{font-size:15px;margin-bottom:8px;color:#1a1a2e}
+  .card p{font-size:13px;color:#666;line-height:1.6}
+  .screen-mock{background:#1a1a2e;border-radius:16px;padding:20px;color:#fff;margin:16px 0;max-width:420px}
+  .screen-mock .title{color:#ff9800;font-size:11px;font-weight:700;letter-spacing:1px;margin-bottom:10px;text-transform:uppercase}
+  .screen-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #333;font-size:13px}
+  .screen-row:last-child{border-bottom:none}
+  .screen-label{color:#aaa}
+  .screen-val{color:#fff;font-weight:700;font-family:Consolas,monospace}
+  .screen-val.on{color:#4caf50}.screen-val.off{color:#f44336}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+  .dot.on{background:#4caf50}.dot.off{background:#555}
+  .wifi-mock{background:#121212;border-radius:16px;padding:20px;color:#eee;margin:16px 0;max-width:480px}
+  .wifi-tab{display:flex;background:#111;border-bottom:2px solid #333;margin:-20px -20px 16px -20px;padding:0 20px}
+  .wifi-tab span{flex:1;text-align:center;padding:10px 16px;font-size:13px;font-weight:700;color:#888}
+  .wifi-tab span.on{color:#ff9800;border-bottom:3px solid #ff9800}
+  .mcd{background:#111;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+  .msec{color:#ff9800;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px}
+  .mrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a1a}
+  .mrow:last-child{border-bottom:none}
+  .mlbl{color:#aaa;font-size:13px}
+  .minp{background:#1a1a1a;border:1px solid #333;border-radius:6px;padding:5px 10px;color:#fff;font-size:13px;font-family:Consolas,monospace;width:90px;text-align:right}
+  .msel{background:#1a1a1a;border:1px solid #333;border-radius:6px;padding:5px 10px;color:#fff;font-size:13px}
+  .mtg{position:relative;width:44px;height:24px;display:inline-block}
+  .mtg-on{background:#4caf50;border-radius:12px;width:44px;height:24px;position:relative}
+  .mtg-off{background:#555;border-radius:12px;width:44px;height:24px;position:relative}
+  .mtg-on::after,.mtg-off::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;top:3px;transition:.2s}
+  .mtg-on::after{right:3px;background:#fff}
+  .mtg-off::after{left:3px;background:#888}
+  .progress-bar{height:8px;background:#333;border-radius:4px;overflow:hidden;margin:8px 0}
+  .progress-fill{height:100%;background:linear-gradient(90deg,#4caf50,#ff9800);width:0;transition:width .3s}
+  .btn-row{display:flex;gap:8px;margin:12px 0}
+  .btn-sm{padding:8px 16px;border-radius:10px;font-size:12px;font-weight:700;color:#fff;border:none}
+  .btn-green{background:#0a9d58}.btn-orange{background:#ff9800}.btn-red{background:#991a2c}.btn-gray{background:#555}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+  th{background:#f5f5f5;padding:10px;text-align:left;font-weight:600;color:#555;border-bottom:2px solid #ddd}
+  td{padding:10px;border-bottom:1px solid #eee}
+  tr:hover td{background:#fafafa}
+  code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:12px;color:#d32f2f}
+  .spec-list{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
+  .spec-tag{background:#f5f5f5;padding:6px 14px;border-radius:20px;font-size:12px;color:#555}
+  .step{display:flex;gap:16px;margin:16px 0}
+  .step-num{width:28px;height:28px;border-radius:50%;background:#ff9800;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0}
+  .step-content{flex:1}
+  .step-content h4{font-size:15px;margin-bottom:4px;color:#1a1a2e}
+  .step-content p{font-size:13px;color:#666}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:720px){.two-col{grid-template-columns:1fr}}
+  footer{background:#1a1a2e;color:#888;padding:20px 30px;text-align:center;font-size:12px}
+  @media print{nav{display:none}section{padding:20px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Y&M ACU</h1>
+  <p>Automotive Control Unit / 汽车动力控制单元 使用说明书</p>
+  <span class="badge">STM32F103 + ESP32-C6 + Nextion HMI</span>
+</header>
+
+<nav>
+  <a href="#welcome">欢迎</a>
+  <a href="#overview">产品概述</a>
+  <a href="#highlights">产品亮点</a>
+  <a href="#screen">屏幕操作</a>
+  <a href="#wifi">WiFi 操作</a>
+  <a href="#guide">使用指南</a>
+  <a href="#trouble">故障排除</a>
+</nav>
+
+<!-- ==================== 欢迎致谢 ==================== -->
+<section id="welcome" style="background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;text-align:center;padding:60px 30px">
+  <h2 style="color:#fff;border-left:none;padding-left:0;font-size:28px;margin-bottom:16px">感谢您选择 Y&M ACU</h2>
+  <p style="color:#aaa;max-width:600px;margin:0 auto 24px;font-size:15px">
+    感谢一群热爱和坚持的小伙伴们。
+  </p>
+  <div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin:28px 0">
+    <div style="background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.3);border-radius:12px;padding:16px 24px;min-width:140px">
+      <div style="font-size:24px;margin-bottom:6px">⚙️</div>
+      <div style="font-size:13px;color:#ff9800;font-weight:700">精密控制</div>
+    </div>
+    <div style="background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.3);border-radius:12px;padding:16px 24px;min-width:140px">
+      <div style="font-size:24px;margin-bottom:6px">🛡️</div>
+      <div style="font-size:13px;color:#4caf50;font-weight:700">稳定可靠</div>
+    </div>
+    <div style="background:rgba(33,150,243,.15);border:1px solid rgba(33,150,243,.3);border-radius:12px;padding:16px 24px;min-width:140px">
+      <div style="font-size:24px;margin-bottom:6px">📡</div>
+      <div style="font-size:13px;color:#2196f3;font-weight:700">智能互联</div>
+    </div>
+    <div style="background:rgba(156,39,176,.15);border:1px solid rgba(156,39,176,.3);border-radius:12px;padding:16px 24px;min-width:140px">
+      <div style="font-size:24px;margin-bottom:6px">🔧</div>
+      <div style="font-size:13px;color:#9c27b0;font-weight:700">持续进化</div>
+    </div>
+  </div>
+  <p style="color:#888;font-size:13px;margin-top:16px">
+    Y&M
+  </p>
+</section>
+
+<!-- ==================== 产品概述 ==================== -->
+<section id="overview">
+  <h2>产品概述</h2>
+  <p>Y&M ACU 是一款专为汽车动力系统设计的智能控制单元，基于 STM32F103 主控芯片，配合 Nextion 串口触摸屏实现<strong>本地操作</strong>，同时通过 ESP32-C6 提供<strong>WiFi 无线控制面板</strong>，支持手机、平板等移动设备远程监控与调试。</p>
+
+  <div class="spec-list">
+    <span class="spec-tag">双路泵控 PWM</span>
+    <span class="spec-tag">MAF 空气流量采集</span>
+    <span class="spec-tag">Flex Fuel 乙醇传感器</span>
+    <span class="spec-tag">排气阀 AT/MT 控制</span>
+    <span class="spec-tag">智能喷淋系统</span>
+    <span class="spec-tag">WiFi AP 模式</span>
+    <span class="spec-tag">CSV 数据记录</span>
+    <span class="spec-tag">多告警保护</span>
+    <span class="spec-tag">支持 Defi 仪表</span>
+    <span class="spec-tag">快速校准模式</span>
+    <span class="spec-tag">双串口 OTA 固件更新</span>
+    <span class="spec-tag">进一步优化ACU控制盒的PCB体积，最终体积仅为iPhone4的2/3</span>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>硬件架构</h3>
+      <ul>
+        <li><strong>主控</strong>：32 位控制芯片 STM32（机器人主流控制器），72MHz Cortex-M3</li>
+        <li><strong>显示屏</strong>：4.2 寸 Nextion TFT 彩色触摸屏（480×320）</li>
+        <li><strong>WiFi 模块</strong>：ESP32-C6，支持 802.11ax</li>
+        <li><strong>供电</strong>：DC 12V（汽车电瓶）</li>
+        <li><strong>通信</strong>：USART2→屏幕(230400bps)，USART3→ESP32(115200bps)</li>
+      </ul>
+    </div>
+    <div>
+      <h3>控制对象</h3>
+      <ul>
+        <li><strong>Pump A / Pump B</strong>：两路 PWM  fuel pump 控制</li>
+        <li><strong>Exhaust Valve</strong>：排气阀 GPIO 控制（PB14）</li>
+        <li><strong>Spray</strong>：喷淋系统 GPIO 控制（PB15）</li>
+        <li><strong>DAC1/DAC2</strong>：PA4/PA5 模拟输出（0~3.3V）</li>
+        <li><strong>4 路模拟输入 + 2 路模拟输出</strong>：支持接入 Defi 仪表</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-icon" style="background:#e3f2fd">📺</div>
+      <h4>Nextion 串口屏（本地操作）</h4>
+      <p>安装在驾驶舱内的 3.5" 彩色触摸屏，提供主页、设置页、出厂页三个界面。所有参数修改、模式切换、手动控制均可在屏幕上完成。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e8f5e9">📶</div>
+      <h4>ESP32 WiFi（远程操作）</div>
+      <h4>ESP32 WiFi（远程操作）</h4>
+      <p>ESP32 创建 WiFi 热点，手机浏览器访问即可查看实时数据和修改设置。Display 页展示运行状态，Setting 页远程调参，支持 CSV 数据导出。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 产品亮点 ==================== -->
+<section id="highlights" style="background:#fafafa">
+  <h2>产品亮点</h2>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-icon" style="background:#e8f5e9">⚡</div>
+      <h4>双路独立泵控 + TEST 模式</h4>
+      <p>Pump A / Pump B 各自拥有独立的起跳阈值、满量阈值和使能开关。支持 TEST 模式直接设定泵输出占空比，便于台架调试和故障排查。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fff8e1">🌡️</div>
+      <h4>Flex Fuel 乙醇传感器</strong></h4>
+      <p>支持 GM 风格 Flex Fuel 传感器（50~150Hz），实时解析乙醇含量（0~100%）和燃油温度。乙醇含量通过 DAC 模拟输出至 ECU，实现自动调整点火 Map。传感器未插入时自动显示 "-"，避免误读。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e3f2fd">🔧</div>
+      <h4>排气阀 AT/MT 双模式 + 延迟关闭</h4>
+      <p>AT 模式：根据 MAF 频率自动开关排气阀。MT 模式：手动按钮直接控制。状态灯始终反映阀门实际 IO（非软件变量），并支持 EX_DELAY 延迟关闭防止频繁开关。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fce4ec">🌧️</div>
+      <h4>智能喷淋 + 透明度状态联动</h4>
+      <p>支持设定开启/关闭时长，主开关使能后自动循环。rainSwith 按钮透明度直观反映使能状态（127=使能，50=失能），RainStat 始终读取实际 IO。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f3e5f5">📊</div>
+      <h4>WiFi 实时数据面板</h4>
+      <p>ESP32 创建 "ACU Center" WiFi 热点，手机连入后访问 192.168.4.1 即可查看实时数据。200ms 刷新间隔，无需安装 App。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e0f2f1">📈</div>
+      <h4>CSV 数据记录 + 下载进度</h4>
+      <p>6000 条循环滚动存储（约 10 分钟），100ms 采样间隔，写满后自动覆盖最早数据。只记录使能的泵，节省内存。点击 Stop Record 下载 CSV，全屏遮罩显示旋转动画和实时 KB 数。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fff3e0">💡</div>
+      <h4>三级自动亮度 + Bright 联动</h4>
+      <p>LightSen=0 手动模式，Bright 滑条直接控制。LightSen=1/2/3 为自动挡位，分别对应 LEVEL1/2/3_VAL 三档系数。自动模式下 Bright 框透明度置灰（aph=50），显示当前 dim 值。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#ffebee">⚠️</div>
+      <h4>多重告警保护 + 轮切显示</h4>
+      <p>液位低、电瓶过压（&gt;14.8V）、电瓶欠压（&lt;11V）三项告警。屏幕端 1 秒轮切图标，WiFi 端红色告警条，ESP32 和屏幕同步推送。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e8eaf6">🏎️</div>
+      <h4>支持 Defi 仪表</h4>
+      <p>4 路模拟输入 + 2 路模拟输出（DAC），可直接接入 Defi 仪表，实时采集和输出模拟信号，兼容市面主流改装仪表。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#e0f7fa">🎯</div>
+      <h4>快速校准模式</h4>
+      <p>出厂页提供一键自动校准，MAF / ETH / AFR 校准系数自动计算并写入 Flash。输入 2.5V 标准电压即可完成精度校准，无需手动计算。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#fce4ec">🔄</div>
+      <h4>双串口 OTA 固件更新</h4>
+      <p>使用双串口通道，支持同时一键更新双设备固件，让 OTA 不再繁琐，升级维护更高效。</p>
+    </div>
+    <div class="card">
+      <div class="card-icon" style="background:#f1f8e9">📱</div>
+      <h4>超小体积</h4>
+      <p>进一步优化 ACU 控制盒的 PCB 体积，最终体积仅为 iPhone4 的 2/3，安装灵活，适配更多车型空间。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== Nextion 屏幕操作 ==================== -->
+<section id="screen">
+  <h2>一、Nextion 屏幕操作</h2>
+  <p>Nextion 串口屏是 ACU 的<strong>本地操作终端</strong>，安装在驾驶舱内，通过 USART2（230400bps）与 STM32 通信。屏幕端操作不依赖 WiFi，即使没有手机也能独立完成所有控制。</p>
+
+  <div class="info-box">
+    <strong>屏幕端特点：</strong> 响应速度快、操作直观（触屏点击）、掉电后设置自动保存（Flash 存储）。适合行驶中快速查看状态和紧急操作。
+  </div>
+
+  <h3>1.1 主页（page0）</h3>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+    <div style="flex-shrink:0">
+      <img src="screen_main.png" alt="Nextion 主页界面" style="border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:480px;width:100%">
+    </div>
+
+    <div style="flex:1;min-width:280px">
+      <p><strong>显示区域：</strong></p>
+      <ul>
+        <li><strong>顶部按钮行</strong>：Pump1/Pump2 使能状态灯（绿=使能，红=未使能）、Spray 喷淋开关、Ex Valve 排气阀状态、AT/MT 模式切换。</li>
+        <li><strong>FUEL STATE（左栏）</strong>：Ethanol% 乙醇含量（0~100%），通过 DAC 模拟输出至 ECU 实现自动调整点火 Map；Fuel Temp 燃油温度。传感器未插入显示 "-"。</li>
+        <li><strong>AIR FLOW（中栏）</strong>：MAF 空气流量大号数字显示，支持 Hz / mV 单位切换。下方两根进度条分别显示 Pump A/B 占空比。</li>
+        <li><strong>PUMP LOGIC（右栏）</strong>：Pump1/Pump2 的 Start（起跳）和 Full（满量）阈值，Spraying Operate/Idle 喷淋时间参数。</li>
+        <li><strong>底部横幅</strong>：Honda Racing 品牌标识。</li>
+        <li><strong>告警图标</strong>：液位低（FluidIco）、电瓶过压（hiIco）、电瓶欠压（lowIco）三个图标同位置，多告警时每秒轮切显示。</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>屏幕端交互：</strong><br>
+        点击 <strong>Spray</strong> 图标 → 切换喷淋主开关（SPRAYMAIN）。使能后状态灯根据实际情况显示绿灯（喷射中）/ 红灯（未喷射），未使能则图标置灰，默认关闭。<br>
+        点击 <strong>MT/AT</strong> 图标 → 切换排气模式。AT 模式下 Ex Valve 图标置灰不可操作，由 MAF 自动控制排气阀；MT 模式下点击 <strong>Ex Valve</strong> 图标手动控制。状态灯根据实际情况显示绿灯（开启）/ 红灯（关闭）。<br>
+        <strong>进度条</strong>：AIR FLOW 区域下方两根进度条分别实时显示 Pump A 和 Pump B 的喷量（PWM 占空比 0~100%），上方第一条为 Pump A（绿色），下方为 Pump B（蓝色）。<br>
+点击右下角 → 进入设置页
+      </div>
+    </div>
+  </div>
+
+  <h3>1.2 设置页（page1）</h3>
+  <div style="margin-bottom:16px">
+    <img src="screen_setting.png" alt="Nextion 设置页界面" style="border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:480px;width:100%">
+  </div>
+  <div class="ok-box">
+    <strong>进入方式：</strong>主页点击右下角设置图标。所有参数修改后必须点击 <strong>SAVE</strong> 按钮保存至 Flash，或点击 <strong>BACK</strong> 放弃返回。
+  </div>
+
+  <table>
+    <tr><th>分组</th><th>参数</th><th>说明</th><th>范围</th></tr>
+    <tr><td rowspan="3">泵 A</td><td>Enable</td><td>泵 A 使能开关</td><td>ON / OFF</td></tr>
+    <tr><td>Start</td><td>起跳阈值，MAF 超过此值开始输出 PWM</td><td>0 ~ 9999</td></tr>
+    <tr><td>Full</td><td>满量阈值，MAF 达到此值输出 100%</td><td>0 ~ 9999</td></tr>
+    <tr><td rowspan="3">泵 B</td><td>Enable</td><td>泵 B 使能开关</td><td>ON / OFF</td></tr>
+    <tr><td>Start</td><td>起跳阈值</td><td>0 ~ 9999</td></tr>
+    <tr><td>Full</td><td>满量阈值</td><td>0 ~ 9999</td></tr>
+    <tr><td rowspan="3">喷淋</td><td>Main</td><td>喷淋主开关（rainSwith 透明度联动）</td><td>ON / OFF</td></tr>
+    <tr><td>On Time</td><td>单次喷淋开启时长</td><td>秒</td></tr>
+    <tr><td>Off Time</td><td>两次喷淋间隔时长</td><td>秒</td></tr>
+    <tr><td rowspan="3">排气</td><td>Auto Mode</td><td>AT=MAF 自动控制，MT=手动按钮控制</td><td>ON / OFF</td></tr>
+    <tr><td>Threshold</td><td>AT 模式下排气开启的 MAF 阈值</td><td>0 ~ 9999</td></tr>
+    <tr><td>Delay</td><td>关闭延迟（条件消失后延迟关闭）</td><td>毫秒</td></tr>
+    <tr><td rowspan="3">显示</td><td>Airflow Unit</td><td>MAF 显示单位 Hz 或 mV</td><td>Hz / mV</td></tr>
+    <tr><td>LightSen</td><td>0=手动亮度，1~3=自动挡位</td><td>0 ~ 3</td></tr>
+    <tr><td>Bright</td><td>手动模式亮度值；自动模式显示当前 dim（框透明度联动）</td><td>0 ~ 100</td></tr>
+    <tr><td rowspan="4">校准</td><td>Flex 0%</td><td>乙醇 0% 对应的 DAC 输入值</td><td>0 ~ 4095</td></tr>
+    <tr><td>Flex 100%</td><td>乙醇 100% 对应的 DAC 输入值</td><td>0 ~ 4095</td></tr>
+    <tr><td>Ex Reverse</td><td>排气阀控制逻辑反向（高电平触发/低电平触发）</td><td>ON / OFF</td></tr>
+    <tr><td>Temp Unit</td><td>温度显示单位 °C / °F</td><td>°C / °F</td></tr>
+  </table>
+
+  <h3>1.3 出厂页（FactorySetting）</h3>
+  <div class="warn-box">
+    <strong>注意：</strong>出厂页仅用于技术人员校准，普通用户请勿随意修改！参数仅在进页时发送一次（lightsensor 除外，每 500ms 刷新）。
+  </div>
+  <ul>
+    <li><strong>mafvadj / ethvadj / afrvadj</strong>：电压校准系数。输入标准 2.5V 后点击自动校准按钮，系统自动计算系数并写入 Flash。公式：<code>coeff = 2500 × 40950000 / (3300 × ADC)</code></li>
+    <li><strong>level1 / level2 / level3</strong>：亮度三级挡位系数，默认 23/25/27。公式：<code>dim = AD_LIGHT_SENS × LEVELx / 100</code></li>
+    <li><strong>dac1_adj / dac2_adj</strong>：DAC 输出校准系数（×/10000）</li>
+    <li><strong>version</strong>：当前固件版本号</li>
+    <li><strong>lightsensor</strong>：光敏传感器 ADC 原始值（0~4095，实时刷新）</li>
+  </ul>
+</section>
+
+<!-- ==================== ESP32 WiFi 操作 ==================== -->
+<section id="wifi" style="background:#fafafa">
+  <h2>二、ESP32 WiFi 操作</h2>
+  <p>ESP32-C6 模块作为 ACU 的<strong>无线扩展终端</strong>，通过 USART3（115200bps）接收 STM32 广播的 Nextion 显示数据，解析后在网页端实时呈现。WiFi 端适合<strong>远程监控、参数微调、数据记录导出</strong>，不需要物理接触屏幕。</p>
+
+  <div class="info-box">
+    <strong>WiFi 端特点：</strong> 无需安装 App（纯网页）、支持手机/平板/电脑、数据记录导出 CSV、200ms 实时刷新。适合台架调试时工程师在旁观察，或副驾驶位乘客协助监控。
+  </div>
+
+  <h3>2.1 连接步骤</h3>
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <h4>连接 WiFi 热点</h4>
+      <p>打开手机/平板 WiFi，搜索热点 <code>ACU Center</code>，输入密码 <code>acu666666</code> 连接。</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <h4>打开浏览器访问</h4>
+      <p>浏览器地址栏输入 <code>http://192.168.4.1</code>，自动加载控制面板。支持 Chrome、Safari、Edge 等现代浏览器。</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <h4>实时监控与操作</h4>
+      <p>Display 页查看实时数据，Setting 页修改参数，LOG 区记录和导出数据。所有数据每 200ms 自动轮询刷新。</p>
+    </div>
+  </div>
+
+  <h3>2.2 Display 页面</h3>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+    <div class="wifi-mock" style="width:360px;max-height:540px;overflow-y:auto">
+      <div class="wifi-tab"><span class="on">Display</span><span>Setting</span></div>
+
+      <div class="mcd">
+        <div class="msec">MAF</div>
+        <div style="font-size:28px;font-weight:600;text-align:center;margin-bottom:10px;font-family:monospace">1250 Hz</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:#666;margin-top:4px"><span>0%</span><span>50%</span><span>100%</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">PUMP OUTPUT</div>
+        <div class="mrow"><span class="mlbl"><span class="dot on"></span>Pump A</span><span style="color:#fff;font-weight:700;font-family:monospace;font-size:14px">45%</span></div>
+        <div class="progress-bar" style="margin:4px 0 8px"><div class="progress-fill" style="width:45%;background:#4caf50"></div></div>
+        <div class="mrow"><span class="mlbl"><span class="dot off"></span>Pump B</span><span style="color:#fff;font-weight:700;font-family:monospace;font-size:14px">0%</span></div>
+        <div class="progress-bar" style="margin:4px 0 0"><div class="progress-fill" style="width:0%;background:#2196f3"></div></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">ETHANOL &amp; TEMP</div>
+        <div class="mrow"><span class="mlbl">Ethanol</span><span style="color:#4caf50;font-weight:700;font-size:14px">85.0%</span></div>
+        <div class="mrow"><span class="mlbl">Fuel Temp</span><span style="color:#4caf50;font-weight:700;font-size:14px">32.5°C</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">STATUS</div>
+        <div class="mrow"><span class="mlbl">Exhaust Mode</span><span style="color:#ff9800;font-weight:700;font-size:14px">AT</span></div>
+        <div class="mrow"><span class="mlbl"><span class="dot on"></span>Status</span><span style="color:#4caf50;font-weight:700;font-size:14px">OPEN</span></div>
+        <div class="mrow"><span class="mlbl">Spray Enable</span><span style="color:#4caf50;font-weight:700;font-size:14px">ON</span></div>
+        <div class="mrow"><span class="mlbl"><span class="dot off"></span>Status</span><span style="color:#666;font-weight:700;font-size:14px">OFF</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">THRESHOLD</div>
+        <div class="mrow"><span class="mlbl">Pump A Start</span><span style="color:#fff;font-size:13px;font-family:monospace">2600</span></div>
+        <div class="mrow"><span class="mlbl">Pump A Full</span><span style="color:#fff;font-size:13px;font-family:monospace">3800</span></div>
+        <div class="mrow"><span class="mlbl">Pump B Start</span><span style="color:#fff;font-size:13px;font-family:monospace">3820</span></div>
+        <div class="mrow"><span class="mlbl">Pump B Full</span><span style="color:#fff;font-size:13px;font-family:monospace">3820</span></div>
+        <div class="mrow"><span class="mlbl">Spray On/Off</span><span style="color:#fff;font-size:13px;font-family:monospace">5/10 s</span></div>
+        <div class="mrow"><span class="mlbl">Ex Threshold</span><span style="color:#fff;font-size:13px;font-family:monospace">3200</span></div>
+        <div class="mrow"><span class="mlbl">Ex Delay</span><span style="color:#fff;font-size:13px;font-family:monospace">2000 ms</span></div>
+        <div class="mrow"><span class="mlbl">Pump Duty</span><span style="color:#fff;font-size:13px;font-family:monospace">30%</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">EXHAUST</div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;background:#ff9800;color:#000;text-align:center;padding:10px;border-radius:8px;font-weight:700;font-size:13px">AT / MT</div>
+          <div style="flex:1;background:#555;color:#aaa;text-align:center;padding:10px;border-radius:8px;font-weight:700;font-size:13px">Ex Valve</div>
+        </div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">SPRAY</div>
+        <div style="background:#ff9800;color:#000;text-align:center;padding:10px;border-radius:8px;font-weight:700;font-size:13px">Spray</div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">LOG</div>
+        <div style="display:flex;gap:8px">
+          <div style="flex:1;background:#4caf50;color:#000;text-align:center;padding:10px;border-radius:8px;font-weight:700;font-size:13px">Start Record</div>
+          <div style="flex:1;background:#991a2c;color:#fff;text-align:center;padding:10px;border-radius:8px;font-weight:700;font-size:13px;opacity:.4">Stop Record</div>
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:11px;color:#666;padding:8px 0">LIVE UPDATE 200ms</div>
+    </div>
+
+    <div style="flex:1;min-width:280px">
+      <p><strong>WiFi Display 页面展示内容：</strong></p>
+      <ul>
+        <li><strong>MAF</strong>：大号数字 + 渐变进度条，单位跟随屏幕设置</li>
+        <li><strong>PUMP OUTPUT</strong>：Pump A/B 状态圆点 + 占空比数值 + 彩色进度条</li>
+        <li><strong>ETHANOL &amp; TEMP</strong>：乙醇含量和燃油温度，传感器未插入显示 "-"</li>
+        <li><strong>STATUS</strong>：
+          <ul>
+            <li>Exhaust Mode：AT 或 MT（橙色）</li>
+            <li>Status：绿色 OPEN / 红色 CLOSED，带圆点指示灯</li>
+            <li>Spray Enable：ON（绿色）/ OFF（灰色）</li>
+            <li>Spray Status：ON（绿色）/ OFF（灰色），带圆点指示灯</li>
+          </ul>
+        </li>
+        <li><strong>THRESHOLD</strong>：只读显示所有阈值参数</li>
+        <li><strong>EXHAUST / SPRAY 按钮</strong>：AT 模式下 Ex Valve 按钮自动置灰（disabled），防止误操作</li>
+      </ul>
+      <div class="highlight-box">
+        <strong>告警显示：</strong> 屏幕顶部红色告警条，多告警时 1 秒轮切显示。液位低（橙色）、电瓶过压（红色）、电瓶欠压（黄色）。
+      </div>
+    </div>
+  </div>
+
+  <h3>2.3 Setting 页面</h3>
+  <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+    <div class="wifi-mock" style="width:360px;max-height:540px;overflow-y:auto">
+      <div class="wifi-tab"><span>Display</span><span class="on">Setting</span></div>
+
+      <div class="mcd">
+        <div class="msec">PUMP A</div>
+        <div class="mrow"><span class="mlbl">Enable</span><span class="mtg"><span class="mtg-on"></span></span></div>
+        <div class="mrow"><span class="mlbl">Start</span><span class="minp">2600</span></div>
+        <div class="mrow"><span class="mlbl">Full</span><span class="minp">3800</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">PUMP B</div>
+        <div class="mrow"><span class="mlbl">Enable</span><span class="mtg"><span class="mtg-off"></span></span></div>
+        <div class="mrow"><span class="mlbl">Start</span><span class="minp">3820</span></div>
+        <div class="mrow"><span class="mlbl">Full</span><span class="minp">3820</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">SPRAY</div>
+        <div class="mrow"><span class="mlbl">Main</span><span class="mtg"><span class="mtg-on"></span></span></div>
+        <div class="mrow"><span class="mlbl">On Time (s)</span><span class="minp">5</span></div>
+        <div class="mrow"><span class="mlbl">Off Time (s)</span><span class="minp">10</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">EXHAUST</div>
+        <div class="mrow"><span class="mlbl">Auto Mode</span><span class="mtg"><span class="mtg-on"></span></span></div>
+        <div class="mrow"><span class="mlbl">Threshold</span><span class="minp">3200</span></div>
+        <div class="mrow"><span class="mlbl">Delay (s)</span><span class="minp">2000</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">DISPLAY</div>
+        <div class="mrow"><span class="mlbl">Airflow Unit</span><span class="msel">Hz ▾</span></div>
+        <div class="mrow"><span class="mlbl">Pump Duty %</span><span class="minp">30</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">CALIBRATION</div>
+        <div class="mrow"><span class="mlbl">Flex 0%</span><span class="minp">500</span></div>
+        <div class="mrow"><span class="mlbl">Flex 100%</span><span class="minp">4500</span></div>
+        <div class="mrow"><span class="mlbl">Fluid Enable</span><span class="mtg"><span class="mtg-off"></span></span></div>
+        <div class="mrow"><span class="mlbl">Ex Reverse</span><span class="mtg"><span class="mtg-off"></span></span></div>
+        <div class="mrow"><span class="mlbl">Temp Unit</span><span class="msel">°C ▾</span></div>
+      </div>
+
+      <div class="mcd">
+        <div class="msec">TEST MODE</div>
+        <div class="mrow"><span class="mlbl">Test Value</span><span class="minp">4000</span></div>
+        <div class="mrow"><span class="mlbl">Test Enable</span><span class="mtg"><span class="mtg-off"></span></span></div>
+      </div>
+
+      <div style="background:#ff9800;color:#000;text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:14px;margin:10px 0">SAVE SETTING</div>
+      <div style="background:#333;color:#aaa;text-align:center;padding:12px;border-radius:10px;font-weight:700;font-size:14px;border:1px solid #555;margin-bottom:10px">BACK</div>
+    </div>
+
+    <div style="flex:1;min-width:280px">
+      <p>与 Nextion 屏幕端设置页<strong>完全同步</strong>，所有参数修改后点击 <strong>SAVE SETTING</strong> 下发至 STM32。WiFi 端做了以下防冲突优化：</p>
+      <ul>
+        <li><strong>编辑保护</strong>：用户正在输入的字段不会被 200ms 轮询覆盖，避免输入到一半被刷掉</li>
+        <li><strong>切页防抖</strong>：手动切页后 3 秒内忽略 STM32 的页面同步响应，防止旧数据把页面拉回</li>
+        <li><strong>排气阀保护</strong>：AT 模式下 Ex Valve 按钮自动添加 disabled 样式（灰色+不可点击）</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>2.4 LOG 数据记录与导出</h3>
+  <div class="info-box">
+    <strong>核心特性：</strong>6000 条循环滚动存储，100ms 采样间隔，总时长约 <strong>10 分钟</strong>。写满后自动覆盖最早数据，始终保持最近 10 分钟的运行记录。只记录使能的泵，未使能的泵列自动跳过，节省内存和 CSV 空间。
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>开始记录</h4>
+          <p>点击 <strong>Start Record</strong>（绿色按钮），按钮变灰，系统开始 100ms 间隔记录。6000 条循环滚动，约 10 分钟，写满后自动覆盖最早数据。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>运行中记录</h4>
+          <p>6000 条循环滚动存储（约 10 分钟），100ms 采样间隔，写满后自动覆盖最早数据。只记录<strong>使能的泵</strong>，未使能的泵跳过以节省内存和 CSV 空间。</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>停止并下载</h4>
+          <p>点击 <strong>Stop Record</strong>（红色按钮），弹出全屏遮罩 + 旋转动画 + 实时 KB 数显示，完成后自动下载 CSV。</p>
+        </div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:0">
+      <strong>CSV 格式示例：</strong><br><br>
+      只使能 PumpA：<code>Time(ms),MAF,PumpA(%),ExValve</code><br>
+      <code>100,1250,45,1</code><br>
+      <code>200,1260,46,1</code><br><br>
+      双泵都使能：<code>Time(ms),MAF,PumpA(%),PumpB(%),ExValve</code><br>
+      <code>100,1250,45,30,1</code><br><br>
+      表头根据记录开始时锁定的泵使能状态动态生成。
+    </div>
+  </div>
+
+  <h3>2.5 屏幕端与 WiFi 端联动</h3>
+  <table>
+    <tr><th>操作场景</th><th>屏幕端操作</th><th>WiFi 端操作</th><th>同步效果</th></tr>
+    <tr><td>修改参数</td><td>设置页修改 → SAVE</td><td>Setting 页修改 → SAVE</td><td>双向同步，先保存者为准</td></tr>
+    <tr><td>切换排气模式</td><td>点击 ATMT 图标</td><td>点击 AT / MT 按钮</td><td>STM32 广播状态，两端同步更新</td></tr>
+    <tr><td>开关喷淋</td><td>点击 rainSwith 图标</td><td>点击 Spray 按钮</td><td>两端状态一致</td></tr>
+    <tr><td>切页</td><td>点击设置/返回</td><td>点击 Display / Setting Tab</td><td>网页切页会通知 STM32，屏幕跟随切换</td></tr>
+    <tr><td>数据记录</td><td>不支持</td><td>Start/Stop Record + CSV 下载</td><td>仅 WiFi 端支持</td></tr>
+  </table>
+</section>
+
+<!-- ==================== 使用指南 ==================== -->
+<section id="guide">
+  <h2>四、使用指南</h2>
+
+  <h3>4.1 首次上电</h3>
+  <ol style="padding-left:24px;margin-bottom:16px">
+    <li>接通 12V 电源，系统自检后自动进入屏幕主页</li>
+    <li>屏幕显示 MAF、泵状态、排气模式等实时数据</li>
+    <li>ESP32 自动创建 "ACU Center" WiFi 热点（约 5 秒后可用）</li>
+    <li>如需修改参数，可在屏幕上操作或手机连 WiFi 访问网页</li>
+  </ol>
+
+  <h3>4.2 设置泵参数（屏幕端）</h3>
+  <ol style="padding-left:24px;margin-bottom:16px">
+    <li>屏幕主页 → 点击右下角 <strong>设置齿轮</strong> → 进入设置页</li>
+    <li>找到 Pump A / Pump B 分组，设定 <strong>Start</strong> 和 <strong>Full</strong> 阈值</li>
+    <li>打开 <strong>Enable</strong> 使能开关</li>
+    <li>点击 <strong>SAVE</strong> 保存，参数自动写入 Flash 掉电保存</li>
+  </ol>
+
+  <h3>4.3 设置泵参数（WiFi 端）</h3>
+  <ol style="padding-left:24px;margin-bottom:16px">
+    <li>手机连接 <code>ACU Center</code> WiFi，浏览器访问 <code>192.168.4.1</code></li>
+    <li>点击顶部 <strong>Setting</strong> Tab 进入设置页</li>
+    <li>修改 Pump A / Pump B 的 Start / Full / Enable 参数</li>
+    <li>点击底部 <strong>SAVE SETTING</strong> 按钮下发至 STM32</li>
+  </ol>
+
+  <h3>4.4 排气阀操作</h3>
+  <div class="two-col">
+    <div class="highlight-box" style="margin-top:0">
+      <strong>屏幕端：</strong><br>
+      AT 模式：系统自动根据 MAF 控制阀门，无需干预<br>
+      MT 模式：点击 <strong>chimneySwitch</strong> 图标手动开关<br>
+      切换模式：点击 <strong>ATMT</strong> 图标
+    </div>
+    <div class="highlight-box" style="margin-top:0">
+      <strong>WiFi 端：</strong><br>
+      AT 模式：系统自动控制，Ex Valve 按钮置灰不可点<br>
+      MT 模式：点击 <strong>Ex Valve</strong> 按钮手动开关<br>
+      切换模式：点击 <strong>AT / MT</strong> 按钮
+    </div>
+  </div>
+
+  <h3>4.5 亮度调节</h3>
+  <ul style="padding-left:24px;margin-bottom:16px">
+    <li><strong>手动</strong>：设置页 LightSen 设为 0，拖动 Bright 滑条（0~100）。此时 Bright 框不透明（aph=127）</li>
+    <li><strong>自动挡位 1/2/3</strong>：LightSen 设为 1/2/3，系统根据环境光自动计算 dim。Bright 框变灰（aph=50）不可编辑，数值显示当前实际 dim</li>
+    <li><strong>挡位系数微调</strong>：进入出厂页修改 level1/2/3 值（默认 23/25/27），值越大同光照下屏幕越亮</li>
+  </ul>
+
+  <h3>4.6 数据记录导出</h3>
+  <ol style="padding-left:24px;margin-bottom:16px">
+    <li>WiFi 端 Display 页 → 找到 LOG 区域</li>
+    <li>点击 <strong>Start Record</strong>（绿色按钮）开始记录，100ms 采样间隔</li>
+    <li>运行中可继续操作其他功能，记录后台进行</li>
+    <li>点击 <strong>Stop Record</strong>，弹出下载遮罩，显示旋转动画和已下载 KB 数</li>
+    <li>下载完成后浏览器自动保存 <code>acu_log.csv</code>，可用 Excel 分析</li>
+  </ol>
+</section>
+
+<!-- ==================== 故障排除 ==================== -->
+<section id="trouble">
+  <h2>五、故障排除</h2>
+
+  <table>
+    <tr><th>现象</th><th>可能原因</th><th>解决方法</th></tr>
+    <tr><td>WiFi 连不上</td><td>ESP32 未启动或距离过远</td><td>检查 ESP32 供电，靠近设备重试</td></tr>
+    <tr><td>泵无输出</td><td>Enable 未打开 / Start 阈值过高</td><td>进入设置页打开 Enable，适当降低 Start 值</td></tr>
+    <tr><td>排气阀不响应</td><td>处于 AT 模式 / MT 模式但按钮被禁用</td><td>切换到 MT 模式后操作，或检查 EX_REV 设置</td></tr>
+    <tr><td>乙醇显示 "-"</td><td>传感器未插入或频率异常</td><td>检查传感器连接，确认频率在 50~150Hz 范围</td></tr>
+    <tr><td>告警图标闪烁</td><td>液位低 / 电瓶电压异常</td><td>检查冷却液液位，测量电瓶电压是否在 11~14.8V</td></tr>
+    <tr><td>设置保存后无效</td><td>未点击 SAVE / Flash 写保护</td><td>确保点击 SAVE 按钮，检查 Flash 扇区是否正常</td></tr>
+    <tr><td>下载 LOG 卡顿</td><td>数据量大，传输需要时间</td><td>等待进度条完成，6000 条约需 5~10 秒</td></tr>
+    <tr><td>屏幕和 WiFi 状态不一致</td><td>ESP32 串口数据丢失或延迟</td><td>检查 USART3 接线，重启 ESP32 模块</td></tr>
+  </table>
+
+  <div class="warn-box">
+    <strong>注意事项：</strong>
+    <ul style="margin-bottom:0;margin-top:8px">
+      <li>修改出厂页参数前请备份原始值，错误的校准系数会导致传感器读数偏差</li>
+      <li>ISP 烧录时建议选择"局部擦除"，避免 Flash 中的用户设置被清除</li>
+      <li>长时间不使用建议断开电源，避免电瓶亏电</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <p>Y&M ACU User Manual | STM32F103 + ESP32-C6 + Nextion HMI</p>
+  <p style="margin-top:4px">Firmware Version: 参见屏幕出厂页 version 字段</p>
+</footer>
+
+</div>
+</body>
+</html>
