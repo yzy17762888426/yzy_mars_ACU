@@ -12,16 +12,18 @@ extern DataPacket_Struct Show_DataPacketType;
 #define PUMP_DUTY_MAX      950   // 满量占空比上限
 #define PUMP_KICK_MS       100   // 软启动持续时间
 
-// 泵上下文:双通道 CCR + 软启动状态
+// 泵上下文:双通道 CCR + 软启动状态 + 运行指示 GPIO
 typedef struct {
     __IO uint32_t *ccr_a;
     __IO uint32_t *ccr_b;
     uint8_t       kicking;   // 正在软启动
     uint32_t      kick_tick; // 软启动起始时刻
+    GPIO_TypeDef  *gpio_port;
+    uint16_t      gpio_pin;
 } PumpCtx;
 
-static PumpCtx pump_a = { &TIM2->CCR3, &TIM2->CCR4, 0, 0 };
-static PumpCtx pump_b = { &TIM2->CCR1, &TIM2->CCR2, 0, 0 };
+static PumpCtx pump_a = { &TIM2->CCR3, &TIM2->CCR4, 0, 0, GPIOB, GPIO_PIN_7 };
+static PumpCtx pump_b = { &TIM2->CCR1, &TIM2->CCR2, 0, 0, GPIOB, GPIO_PIN_6 };
 
 static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, const char *name)
 {
@@ -30,6 +32,7 @@ static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, con
         ctx->kicking   = 0;
         *ctx->ccr_a    = 0;
         *ctx->ccr_b    = 0;
+        HAL_GPIO_WritePin(ctx->gpio_port, ctx->gpio_pin, GPIO_PIN_RESET);
         printf("%s.val=0\xff\xff\xff", name);
         HAL_Delay(10);
         return;
@@ -37,6 +40,7 @@ static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, con
 
     if (progress > 0)
     {
+        HAL_GPIO_WritePin(ctx->gpio_port, ctx->gpio_pin, GPIO_PIN_SET);
         if (ctx->kicking && (HAL_GetTick() - ctx->kick_tick) < PUMP_KICK_MS)
         {
             *ctx->ccr_a = PUMP_DUTY_KICK;
@@ -57,6 +61,7 @@ static void MotorPump_Update(PumpCtx *ctx, uint8_t enable, uint8_t progress, con
         ctx->kick_tick = HAL_GetTick();
         *ctx->ccr_a = 0;
         *ctx->ccr_b = 0;
+        HAL_GPIO_WritePin(ctx->gpio_port, ctx->gpio_pin, GPIO_PIN_RESET);
     }
 
     printf("%s.val=%d\xff\xff\xff", name, (*ctx->ccr_a + *ctx->ccr_b) * 100 / (PUMP_DUTY_KICK * 2));
