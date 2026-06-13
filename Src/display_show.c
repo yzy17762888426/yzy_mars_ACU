@@ -377,7 +377,7 @@ static void MAF_AutoCal(void)
     uint16_t avg = (uint16_t)(sum / 18);
     if (avg != 0)
     {
-        DataPacket_Type.MAF_ADJ = 50000000/ avg;
+        DataPacket_Type.MAF_ADJ = 25000000 / avg;
         Flash_WriteSetting((uint16_t *)&DataPacket_Type, sizeof(DataPacket_Type));
         Flash_ReadSetting((uint16_t *)&Show_DataPacketType, sizeof(DataPacket_Type));
     }

@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>除螨仪调试工具</title>
+<style>
+  :root {
+    --bg: #1a1a2e;
+    --panel: #16213e;
+    --card: #0f3460;
+    --accent: #e94560;
+    --accent2: #533483;
+    --text: #eaeaea;
+    --text2: #a0a0a0;
+    --border: #2a2a4a;
+    --ok: #2ecc71;
+    --warn: #f39c12;
+    --err: #e74c3c;
+    --info: #3498db;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  /* ===== 顶部标题栏 ===== */
+  .topbar {
+    height: 44px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+  .topbar h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar h1::before {
+    content: '\2699';
+    font-size: 18px;
+  }
+  .conn-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--err);
+    box-shadow: 0 0 6px var(--err);
+    transition: .3s;
+  }
+  .status-dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .status-dot.warn { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+
+  /* ===== 主体布局 ===== */
+  .main-wrap {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ===== 左侧边栏 ===== */
+  .sidebar {
+    width: 260px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .sb-section {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sb-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text2);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .sb-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* 连接设置 */
+  .conn-mode { display: flex; gap: 4px; margin-bottom: 10px; }
+  .conn-mode button {
+    flex: 1;
+    padding: 6px 0;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text2);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: .2s;
+  }
+  .conn-mode button.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .form-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .form-row label {
+    font-size: 12px;
+    color: var(--text2);
+    width: 52px;
+    flex-shrink: 0;
+  }
+  .form-row input, .form-row select {
+    flex: 1;
+    padding: 5px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    font-size: 12px;
+    outline: none;
+  }
+  .form-row input:focus, .form-row select:focus { border-color: var(--accent); }
+  .btn {
+    padding: 7px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: .2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #d13a52; }
+  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-success { background: var(--ok); color: #fff; }
+  .btn-success:hover { background: #27ae60; }
+  .btn-group { display: flex; gap: 8px; margin-top: 10px; }
+  .btn-group .btn { flex: 1; }
+
+  /* 状态指示 */
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .status-item {
+    background: var(--card);
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+  }
+  .status-item .val {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Consolas', monospace;
+  }
+  .status-item .lbl {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  .status-item.warn .val { color: var(--warn); }
+  .status-item.err .val { color: var(--err); }
+  .status-item.ok .val { color: var(--ok); }
+
+  /* 开关 */
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .switch {
+    position: relative;
+    width: 38px; height: 20px;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: var(--border);
+    border-radius: 20px;
+    transition: .3s;
+  }
+  .slider::before {
+    content: '';
+    position: absolute;
+    height: 16px; width: 16px;
+    left: 2px; bottom: 2px;
+    background: #fff;
+    border-radius: 50%;
+    transition: .3s;
+  }
+  .switch input:checked + .slider { background: var(--ok); }
+  .switch input:checked + .slider::before { transform: translateX(18px); }
+
+  /* ===== 主内容区 ===== */
+  .content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* 标签页 */
+  .tabs {
+    display: flex;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    gap: 2px;
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 10px 18px;
+    font-size: 13px;
+    color: var(--text2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: .2s;
+    user-select: none;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .tab-panel {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-content: flex-start;
+  }
+  .tab-panel.active { display: flex; }
+
+  /* 卡片面板 */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    min-width: 280px;
+    flex: 1 1 320px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon { font-size: 16px; }
+
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .field label {
+    font-size: 12px;
+    color: var(--text2);
+    width: 90px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .field input[type="number"], .field input[type="text"], .field select {
+    flex: 1;
+    padding: 6px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    font-size: 13px;
+    outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); }
+  .field input[type="checkbox"] {
+    width: 18px; height: 18px;
+    accent-color: var(--accent);
+  }
+  .field .unit {
+    font-size: 11px;
+    color: var(--text2);
+    width: 30px;
+    text-align: left;
+  }
+  .field .readonly {
+    background: var(--card);
+    color: var(--text2);
+    cursor: not-allowed;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .card-actions .btn { flex: 1; font-size: 12px; padding: 6px; }
+
+  /* 实时监控区 */
+  .monitor-row {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+  }
+  .monitor-big {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+  }
+  .monitor-big .num {
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Consolas', monospace;
+    line-height: 1;
+  }
+  .monitor-big .sub {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 8px;
+  }
+  .monitor-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+  .monitor-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--ok), var(--warn), var(--err));
+    border-radius: 4px;
+    transition: width .3s;
+  }
+
+  /* 图表区域 */
+  .chart-wrap {
+    width: 100%;
+    height: 200px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .chart-wrap canvas { width: 100%; height: 100%; }
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+  .chart-legend span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .chart-legend i {
+    display: inline-block;
+    width: 12px; height: 3px;
+    border-radius: 2px;
+  }
+
+  /* 日志区域 */
+  .log-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .log-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .log-box {
+    flex: 1;
+    height: 220px;
+    background: #0d0d1a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+  .log-box .log-tx { color: var(--info); }
+  .log-box .log-rx { color: var(--ok); }
+  .log-box .log-err { color: var(--err); }
+  .log-box .log-info { color: var(--text2); }
+
+  /* ===== 底部说明 ===== */
+  .footer-note {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text2);
+    max-width: 360px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    z-index: 100;
+    display: none;
+  }
+  .footer-note.show { display: block; }
+  .footer-note h4 {
+    color: var(--accent);
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .footer-note ul { margin-left: 16px; }
+  .footer-note li { margin-bottom: 4px; }
+  .help-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 700;
+    z-index: 101;
+    box-shadow: 0 2px 10px rgba(233,69,96,0.4);
+  }
+  .help-btn:hover { background: #d13a52; }
+
+  /* 协议原始帧显示 */
+  .hex-preview {
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    background: var(--bg);
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    word-break: break-all;
+    margin-top: 8px;
+  }
+  .hex-preview .head { color: var(--accent); font-weight: 700; }
+  .hex-preview .cmd { color: var(--info); }
+  .hex-preview .payload { color: var(--ok); }
+  .hex-preview .crc { color: var(--warn); }
+  .hex-preview .tail { color: var(--accent); font-weight: 700; }
+
+  /* 帮助图示面板 */
+  .help-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .help-overlay.show { display: flex; }
+  .help-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 900px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+  }
+  .help-panel h2 {
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-size: 18px;
+  }
+  .help-panel h3 {
+    color: var(--info);
+    margin: 16px 0 8px;
+    font-size: 14px;
+  }
+  .help-panel p, .help-panel li {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.8;
+  }
+  .help-panel ul { margin-left: 20px; }
+  .help-panel code {
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--ok);
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+  }
+  .help-close {
+    float: right;
+    background: none;
+    border: none;
+    color: var(--text2);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .help-close:hover { color: var(--accent); }
+
+  .diagram-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin: 10px 0;
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+  .diagram-box .d-head { color: var(--accent); }
+  .diagram-box .d-cmd { color: var(--info); }
+  .diagram-box .d-pl { color: var(--ok); }
+  .diagram-box .d-crc { color: var(--warn); }
+  .diagram-box .d-tail { color: var(--accent); }
+  .diagram-box .d-desc { color: var(--text2); margin-left: 8px; }
+
+  /* 区域标注 */
+  .zone-map {
+    display: grid;
+    grid-template-columns: 120px 1fr 120px;
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .zone-map .zone {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    text-align: center;
+    font-size: 11px;
+  }
+  .zone-map .zone.main { border-color: var(--accent); color: var(--accent); }
+  .zone-map .zone.side { border-color: var(--info); color: var(--info); }
+  .zone-map .zone.bottom { border-color: var(--ok); color: var(--ok); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+  /* 脉冲动画 */
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .4; }
+  }
+  .pulse { animation: pulse 1.5s infinite; }
+</style>
+</head>
+<body>
+
+<!-- ===== 顶部标题栏 ===== -->
+<div class="topbar">
+  <h1>除螨仪调试工具 v1.0</h1>
+  <div class="conn-status">
+    <span class="status-dot" id="connDot"></span>
+    <span id="connText">未连接</span>
+  </div>
+</div>
+
+<!-- ===== 主体 ===== -->
+<div class="main-wrap">
+
+  <!-- ===== 左侧边栏 ===== -->
+  <aside class="sidebar">
+
+    <!-- ① 连接控制区 -->
+    <div class="sb-section">
+      <div class="sb-title">连接控制</div>
+      <div class="conn-mode">
+        <button class="active" onclick="setConnMode('serial')" id="btnSerial">串口</button>
+        <button onclick="setConnMode('wifi')" id="btnWifi">WiFi</button>
+      </div>
+      <!-- 串口模式 -->
+      <div id="serialSettings">
+        <div class="form-row">
+          <label>端口</label>
+          <select id="serialPort"><option>点击刷新...</option></select>
+        </div>
+        <div class="form-row">
+          <label>波特率</label>
+          <select id="baudRate">
+            <option value="9600" selected>9600</option>
+            <option value="115200">115200</option>
+            <option value="38400">38400</option>
+          </select>
+        </div>
+      </div>
+      <!-- WiFi模式 -->
+      <div id="wifiSettings" style="display:none">
+        <div class="form-row">
+          <label>IP地址</label>
+          <input type="text" id="wifiIP" value="192.168.4.1" placeholder="ESP32 IP">
+        </div>
+        <div class="form-row">
+          <label>端口</label>
+          <input type="number" id="wifiPort" value="8080">
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="connect()">连接</button>
+        <button class="btn btn-secondary" onclick="disconnect()">断开</button>
+      </div>
+      <div class="btn-group" style="margin-top:6px">
+        <button class="btn btn-secondary" onclick="refreshPorts()" style="font-size:11px">刷新端口</button>
+      </div>
+    </div>
+
+    <!-- ② 设备状态概览 -->
+    <div class="sb-section">
+      <div class="sb-title">实时状态</div>
+      <div class="status-grid">
+        <div class="status-item" id="stMaf">
+          <div class="val" id="valMaf">--</div>
+          <div class="lbl">MAF (Hz)</div>
+        </div>
+        <div class="status-item" id="stTemp">
+          <div class="val" id="valTemp">--</div>
+          <div class="lbl">温度</div>
+        </div>
+        <div class="status-item" id="stPumpA">
+          <div class="val" id="valPumpA">OFF</div>
+          <div class="lbl">A泵状态</div>
+        </div>
+        <div class="status-item" id="stPumpB">
+          <div class="val" id="valPumpB">OFF</div>
+          <div class="lbl">B泵状态</div>
+        </div>
+        <div class="status-item" id="stEx">
+          <div class="val" id="valEx">OFF</div>
+          <div class="lbl">排气阀</div>
+        </div>
+        <div class="status-item" id="stSpray">
+          <div class="val" id="valSpray">OFF</div>
+          <div class="lbl">喷淋</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 快捷控制 -->
+    <div class="sb-section">
+      <div class="sb-title">快捷控制</div>
+      <div class="switch-row">
+        <span>日志记录</span>
+        <label class="switch"><input type="checkbox" id="swLog" onchange="toggleLog()"><span class="slider"></span></label>
+      </div>
+      <div class="switch-row">
+        <span>测试模式</span>
+        <label class="switch"><input type="checkbox" id="swTest" onchange="toggleTest()"><span class="slider"></span></label>
+      </div>
+      <div class="switch-row">
+        <span>排气自动</span>
+        <label class="switch"><input type="checkbox" id="swExAuto" onchange="toggleExAuto()"><span class="slider"></span></label>
+      </div>
+      <div class="switch-row">
+        <span>喷淋开关</span>
+        <label class="switch"><input type="checkbox" id="swSpray" onchange="toggleSpray()"><span class="slider"></span></label>
+      </div>
+    </div>
+
+    <!-- ④ 通信统计 -->
+    <div class="sb-section">
+      <div class="sb-title">通信统计</div>
+      <div class="status-grid">
+        <div class="status-item">
+          <div class="val" id="statTx">0</div>
+          <div class="lbl">发送帧</div>
+        </div>
+        <div class="status-item">
+          <div class="val" id="statRx">0</div>
+          <div class="lbl">接收帧</div>
+        </div>
+        <div class="status-item">
+          <div class="val" id="statErr">0</div>
+          <div class="lbl">错误帧</div>
+        </div>
+        <div class="status-item">
+          <div class="val" id="statRate">0</div>
+          <div class="lbl">帧/秒</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== 主内容区 ===== -->
+  <div class="content">
+
+    <!-- 标签页 -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('monitor')">运行监控</div>
+      <div class="tab" onclick="switchTab('pump')">泵控制</div>
+      <div class="tab" onclick="switchTab('exhaust')">排气控制</div>
+      <div class="tab" onclick="switchTab('spray')">喷雾控制</div>
+      <div class="tab" onclick="switchTab('calib')">MAF标定</div>
+      <div class="tab" onclick="switchTab('factory')">出厂调校</div>
+      <div class="tab" onclick="switchTab('manual')">手动测试</div>
+      <div class="tab" onclick="switchTab('log')">日志</div>
+    </div>
+
+    <!-- === ① 运行监控 === -->
+    <div class="tab-panel active" id="panel-monitor">
+      <div class="monitor-row">
+        <div class="monitor-big">
+          <div class="num" id="dispMaf">0</div>
+          <div class="sub">MAF 频率 (Hz) / 毫伏 (mV)</div>
+          <div class="monitor-bar"><div class="monitor-bar-inner" id="mafBar" style="width:0%"></div></div>
+        </div>
+        <div class="monitor-big">
+          <div class="num" id="dispTemp">0</div>
+          <div class="sub">温度 / 液位</div>
+        </div>
+        <div class="monitor-big">
+          <div class="num" id="dispAdc">0</div>
+          <div class="sub">ADC 原始值</div>
+        </div>
+      </div>
+      <div class="card" style="width:100%;flex:none">
+        <div class="card-title"><span class="icon">&#128200;</span>MAF 实时曲线</div>
+        <div class="chart-wrap"><canvas id="chartMaf"></canvas></div>
+        <div class="chart-legend">
+          <span><i style="background:var(--accent)"></i>MAF频率</span>
+          <span><i style="background:var(--info)"></i>MAF电压</span>
+          <span><i style="background:var(--ok)"></i>泵A占空比</span>
+          <span><i style="background:var(--warn)"></i>泵B占空比</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- === ② 泵控制 === -->
+    <div class="tab-panel" id="panel-pump">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128167;</span>泵 A 参数</div>
+        <div class="field">
+          <label>使能</label>
+          <input type="checkbox" id="p1_en">
+        </div>
+        <div class="field">
+          <label>起跳阈值</label>
+          <input type="number" id="p1_start" value="100" min="0" max="65535">
+          <span class="unit">Hz</span>
+        </div>
+        <div class="field">
+          <label>满量阈值</label>
+          <input type="number" id="p1_full" value="800" min="0" max="65535">
+          <span class="unit">Hz</span>
+        </div>
+        <div class="field">
+          <label>当前频率</label>
+          <input type="number" id="p1_cur" class="readonly" readonly value="0">
+          <span class="unit">Hz</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="savePump()">保存到设备</button>
+          <button class="btn btn-secondary" onclick="readPump()">读取</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128167;</span>泵 B 参数</div>
+        <div class="field">
+          <label>使能</label>
+          <input type="checkbox" id="p2_en">
+        </div>
+        <div class="field">
+          <label>起跳阈值</label>
+          <input type="number" id="p2_start" value="100" min="0" max="65535">
+          <span class="unit">Hz</span>
+        </div>
+        <div class="field">
+          <label>满量阈值</label>
+          <input type="number" id="p2_full" value="800" min="0" max="65535">
+          <span class="unit">Hz</span>
+        </div>
+        <div class="field">
+          <label>当前频率</label>
+          <input type="number" id="p2_cur" class="readonly" readonly value="0">
+          <span class="unit">Hz</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="savePump()">保存到设备</button>
+          <button class="btn btn-secondary" onclick="readPump()">读取</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">&#9881;</span>公共参数</div>
+        <div class="field">
+          <label>待机占空比</label>
+          <input type="number" id="pump_stduty" value="5" min="0" max="100">
+          <span class="unit">%</span>
+        </div>
+        <div class="field">
+          <label>流量主值</label>
+          <input type="number" id="fluid_main" value="0" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>屏幕亮度</label>
+          <input type="number" id="bright" value="50" min="0" max="100">
+          <span class="unit">%</span>
+        </div>
+        <div class="field">
+          <label>光敏阈值</label>
+          <input type="number" id="lightsen" value="500" min="0" max="4095">
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="saveCommon()">保存到设备</button>
+          <button class="btn btn-secondary" onclick="readCommon()">读取</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- === ③ 排气控制 === -->
+    <div class="tab-panel" id="panel-exhaust">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128168;</span>排气参数</div>
+        <div class="field">
+          <label>控制模式</label>
+          <select id="ex_auto">
+            <option value="0">手动 (MT)</option>
+            <option value="1">自动 (AT)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>触发阈值</label>
+          <input type="number" id="ex_set" value="500" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>排气延迟</label>
+          <input type="number" id="ex_delay" value="5" min="0" max="65535">
+          <span class="unit">秒</span>
+        </div>
+        <div class="field">
+          <label>排气反向</label>
+          <input type="checkbox" id="ex_rev">
+        </div>
+        <div class="field">
+          <label>阀门状态</label>
+          <input type="text" id="ex_val_state" class="readonly" readonly value="关闭">
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="saveExhaust()">保存到设备</button>
+          <button class="btn btn-secondary" onclick="readExhaust()">读取</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128295;</span>手动控制</div>
+        <div class="field">
+          <label>阀门开关</label>
+          <label class="switch"><input type="checkbox" id="ex_val_sw" onchange="setExValve()"><span class="slider"></span></label>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="sendExCmd()">发送阀门命令</button>
+        </div>
+        <div class="hex-preview" id="exHexPreview">帧预览: --</div>
+      </div>
+    </div>
+
+    <!-- === ④ 喷雾控制 === -->
+    <div class="tab-panel" id="panel-spray">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128166;</span>喷雾参数</div>
+        <div class="field">
+          <label>喷雾开关</label>
+          <input type="checkbox" id="spray_main">
+        </div>
+        <div class="field">
+          <label>开启时长</label>
+          <input type="number" id="rain_ontime" value="3" min="0" max="65535">
+          <span class="unit">秒</span>
+        </div>
+        <div class="field">
+          <label>关闭时长</label>
+          <input type="number" id="rain_offtime" value="5" min="0" max="65535">
+          <span class="unit">秒</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="saveSpray()">保存到设备</button>
+          <button class="btn btn-secondary" onclick="readSpray()">读取</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- === ⑤ MAF标定 === -->
+    <div class="tab-panel" id="panel-calib">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128208;</span>MAF 线性标定</div>
+        <div class="field">
+          <label>0% 对应输入</label>
+          <input type="number" id="flex0" value="0" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>100% 对应输入</label>
+          <input type="number" id="flex100" value="4095" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>显示模式</label>
+          <select id="hz_mv">
+            <option value="0">频率模式 (Hz)</option>
+            <option value="1">毫伏模式 (mV)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>温度单位</label>
+          <select id="temp_uint">
+            <option value="0">摄氏度 (℃)</option>
+            <option value="1">华氏度 (℉)</option>
+          </select>
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="saveCalib()">保存到设备</button>
+          <button class="btn btn-secondary" onclick="readCalib()">读取</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">&#9881;</span>MAF 校准操作</div>
+        <div class="field">
+          <label>MAF电压校准</label>
+          <input type="number" id="maf_adj" value="0" min="0" max="65535">
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="autoCalMafV()">自动校准电压</button>
+          <button class="btn btn-secondary" onclick="autoCalDac()">DAC 自动校准</button>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:8px">
+          自动校准: 输入标准2.5V电压后点击"自动校准电压"<br>
+          DAC校准: DAC1输出2.5V短接MAF输入后点击"DAC自动校准"
+        </div>
+      </div>
+    </div>
+
+    <!-- === ⑥ 出厂调校 === -->
+    <div class="tab-panel" id="panel-factory">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128295;</span>出厂参数</div>
+        <div class="field">
+          <label>液位1阈值</label>
+          <input type="number" id="level1" value="1000" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>液位2阈值</label>
+          <input type="number" id="level2" value="2000" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>液位3阈值</label>
+          <input type="number" id="level3" value="3000" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>ETH 校准系数</label>
+          <input type="number" id="eth_adj" value="10000" min="0" max="65535">
+          <span class="unit">/10000</span>
+        </div>
+        <div class="field">
+          <label>空燃比校准</label>
+          <input type="number" id="afr_adj" value="10000" min="0" max="65535">
+          <span class="unit">/10000</span>
+        </div>
+        <div class="field">
+          <label>DAC1 校准</label>
+          <input type="number" id="dac1_adj" value="0" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>DAC2 校准</label>
+          <input type="number" id="dac2_adj" value="0" min="0" max="65535">
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="saveFactory()">保存到设备</button>
+          <button class="btn btn-secondary" onclick="readFactory()">读取</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- === ⑦ 手动测试 === -->
+    <div class="tab-panel" id="panel-manual">
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128300;</span>DAC 直接输出</div>
+        <div class="field">
+          <label>DAC1 值</label>
+          <input type="number" id="dac1_out" value="2048" min="0" max="4095">
+        </div>
+        <div class="field">
+          <label>DAC2 值</label>
+          <input type="number" id="dac2_out" value="2048" min="0" max="4095">
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="sendDac1()">输出 DAC1</button>
+          <button class="btn btn-primary" onclick="sendDac2()">输出 DAC2</button>
+        </div>
+        <div class="hex-preview" id="dacHexPreview">帧预览: --</div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="icon">&#128295;</span>测试模式</div>
+        <div class="field">
+          <label>模拟MAF值</label>
+          <input type="number" id="test_set" value="500" min="0" max="65535">
+        </div>
+        <div class="field">
+          <label>测试状态</label>
+          <input type="text" id="test_state" class="readonly" readonly value="未进入">
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-primary" onclick="enterTest()">进入测试</button>
+          <button class="btn btn-secondary" onclick="exitTest()">退出测试</button>
+        </div>
+        <div style="font-size:11px;color:var(--text2);margin-top:8px">
+          测试模式下，设备忽略真实MAF传感器输入，使用上方模拟值运行
+        </div>
+      </div>
+    </div>
+
+    <!-- === ⑧ 日志 === -->
+    <div class="tab-panel" id="panel-log">
+      <div class="log-wrap">
+        <div class="log-toolbar">
+          <button class="btn btn-success" onclick="startLog()">启动日志</button>
+          <button class="btn btn-secondary" onclick="stopLog()">停止日志</button>
+          <button class="btn btn-secondary" onclick="clearLog()">清空</button>
+          <button class="btn btn-secondary" onclick="exportLog()">导出</button>
+          <label class="switch" style="margin-left:auto">
+            <input type="checkbox" id="autoScroll" checked><span class="slider"></span>
+          </label>
+          <span style="font-size:12px;color:var(--text2)">自动滚动</span>
+        </div>
+        <div class="log-box" id="logBox"></div>
+      </div>
+    </div>
+
+  </div><!-- content -->
+</div><!-- main-wrap -->
+
+<!-- ===== 帮助按钮 ===== -->
+<button class="help-btn" onclick="toggleHelp()" title="界面说明">?</button>
+
+<!-- ===== 帮助覆盖层 ===== -->
+<div class="help-overlay" id="helpOverlay" onclick="if(event.target===this)toggleHelp()">
+  <div class="help-panel">
+    <button class="help-close" onclick="toggleHelp()">&times;</button>
+    <h2>&#128161; 除螨仪调试工具 - 界面区域说明</h2>
+
+    <h3>&#127760; 整体布局</h3>
+    <div class="zone-map">
+      <div class="zone side">左侧边栏<br>连接控制<br>实时状态<br>快捷控制<br>通信统计</div>
+      <div class="zone main">主内容区<br>8个功能标签页<br>参数设置面板<br>实时监控图表</div>
+      <div class="zone bottom">底部日志<br>通信原始帧<br>操作记录</div>
+    </div>
+
+    <h3>&#128268; 1. 顶部标题栏</h3>
+    <p>显示工具名称 <code>除螨仪调试工具 v1.0</code> 和当前 <b>连接状态</b>。</p>
+    <ul>
+      <li><b style="color:var(--err)">&#9679; 红色</b> = 未连接</li>
+      <li><b style="color:var(--ok)">&#9679; 绿色</b> = 已连接</li>
+      <li><b style="color:var(--warn)">&#9679; 黄色</b> = 连接中/异常</li>
+    </ul>
+
+    <h3>&#128424; 2. 左侧边栏 - 连接控制区</h3>
+    <p>支持<b>串口直连</b>和<b>ESP32 WiFi</b>两种连接方式切换：</p>
+    <ul>
+      <li><b>串口模式</b>: 通过 USB转TTL 连接 STM32 的 USART2 (与 Nextion 屏共用)，选择 COM 端口和波特率</li>
+      <li><b>WiFi 模式</b>: 连接 ESP32 的热点，输入 IP 地址和端口 (默认 192.168.4.1:8080)</li>
+    </ul>
+
+    <h3>&#128200; 3. 左侧边栏 - 实时状态区</h3>
+    <p>6个实时状态卡片，显示设备运行关键指标：</p>
+    <ul>
+      <li><b>MAF (Hz)</b>: 空气质量流量传感器频率值</li>
+      <li><b>温度</b>: 设备当前温度读数</li>
+      <li><b>A泵/B泵状态</b>: ON/OFF 及运行频率</li>
+      <li><b>排气阀</b>: 阀门开/关状态</li>
+      <li><b>喷淋</b>: 喷淋系统运行状态</li>
+    </ul>
+
+    <h3>&#9881; 4. 左侧边栏 - 快捷控制区</h3>
+    <p>常用功能的快速开关，无需切换标签页：</p>
+    <ul>
+      <li><b>日志记录</b>: 启动/停止设备端数据日志上传</li>
+      <li><b>测试模式</b>: 进入/退出测试模式 (使用模拟MAF值)</li>
+      <li><b>排气自动</b>: 切换排气 AT(自动)/MT(手动) 模式</li>
+      <li><b>喷淋开关</b>: 快速启停喷淋系统</li>
+    </ul>
+
+    <h3>&#128202; 5. 左侧边栏 - 通信统计区</h3>
+    <p>显示上位机与设备之间的通信质量：</p>
+    <ul>
+      <li><b>发送帧</b>: 累计发送的命令帧数量</li>
+      <li><b>接收帧</b>: 累计接收的响应帧数量</li>
+      <li><b>错误帧</b>: CRC校验失败或格式错误的帧数</li>
+      <li><b>帧/秒</b>: 实时通信速率</li>
+    </ul>
+
+    <h3>&#128200; 6. 运行监控标签页</h3>
+    <p>设备运行的<b>核心实时数据展示</b>：</p>
+    <ul>
+      <li><b>MAF 频率大数字</b>: 当前空气质量流量主显示值，带进度条可视化</li>
+      <li><b>温度/液位</b>: 环境温度和液位传感器读数</li>
+      <li><b>ADC 原始值</b>: 模数转换原始读数</li>
+      <li><b>MAF 实时曲线</b>: 滚动时间轴曲线图，同时显示 MAF频率、MAF电压、泵A占空比、泵B占空比四条曲线</li>
+    </ul>
+
+    <h3>&#128167; 7. 泵控制标签页</h3>
+    <p>双泵系统的参数配置面板：</p>
+    <ul>
+      <li><b>泵 A/B 参数</b>: 使能开关、起跳阈值(频率低于此值泵启动)、满量阈值(频率高于此值泵全速)</li>
+      <li><b>公共参数</b>: 待机占空比(%)、流量主值、屏幕亮度(%)、光敏阈值</li>
+    </ul>
+
+    <h3>&#128168; 8. 排气控制标签页</h3>
+    <p>排气系统配置和手动控制：</p>
+    <ul>
+      <li><b>排气参数</b>: 控制模式(AT自动/MT手动)、触发阈值、排气延迟(秒)、排气反向标志</li>
+      <li><b>手动控制</b>: 手动模式下可直接开关排气阀门，下方显示即将发送的原始协议帧</li>
+    </ul>
+
+    <h3>&#128166; 9. 喷雾控制标签页</h3>
+    <p>喷淋系统的启停和周期配置：</p>
+    <ul>
+      <li><b>喷雾开关</b>: 总开关使能</li>
+      <li><b>开启时长</b>: 单次喷淋持续时间 (秒)</li>
+      <li><b>关闭时长</b>: 两次喷淋间隔时间 (秒)</li>
+    </ul>
+
+    <h3>&#128208; 10. MAF标定标签页</h3>
+    <p>空气质量流量传感器的标定和校准：</p>
+    <ul>
+      <li><b>线性标定</b>: 0%对应输入值、100%对应输入值，定义传感器量程映射</li>
+      <li><b>显示模式</b>: 频率(Hz) 或 毫伏(mV)</li>
+      <li><b>温度单位</b>: 摄氏度(℃) 或 华氏度(℉)</li>
+      <li><b>校准操作</b>: 一键自动校准MAF电压和DAC输出</li>
+    </ul>
+
+    <h3>&#128295; 11. 出厂调校标签页</h3>
+    <p>生产线出厂时设置的校准参数，<b style="color:var(--warn)">谨慎修改</b>：</p>
+    <ul>
+      <li><b>液位阈值</b>: 3级液位检测的分界点</li>
+      <li><b>ETH/AFR 校准系数</b>: 除以10000后的比例系数</li>
+      <li><b>DAC1/DAC2 校准</b>: 数模转换偏移校准值</li>
+    </ul>
+
+    <h3>&#128300; 12. 手动测试标签页</h3>
+    <p>开发和维修时的调试工具：</p>
+    <ul>
+      <li><b>DAC直接输出</b>: 绕过正常逻辑，直接向DAC1/DAC2写入指定值(0~4095)</li>
+      <li><b>测试模式</b>: 输入模拟MAF值后进入测试，设备按模拟值运行，下方显示实时协议帧预览</li>
+    </ul>
+
+    <h3>&#128220; 13. 日志标签页</h3>
+    <p>通信原始数据和操作记录：</p>
+    <ul>
+      <li><b style="color:var(--info)">蓝色 (TX)</b>: 上位机发送的命令帧 (十六进制)</li>
+      <li><b style="color:var(--ok)">绿色 (RX)</b>: 设备返回的数据帧</li>
+      <li><b style="color:var(--err)">红色 (ERR)</b>: 错误帧或超时</li>
+      <li><b style="color:var(--text2)">灰色 (INFO)</b>: 系统提示信息</li>
+      <li>支持<b>启动/停止</b>、<b>清空</b>、<b>导出为文件</b>功能</li>
+    </ul>
+
+    <h3>&#128172; 通信协议</h3>
+    <p>上位机与设备使用统一的<b>传输层协议</b>：</p>
+    <div class="diagram-box">
+      <span class="d-head">AA AA</span>
+      <span class="d-desc">帧头 (2字节连续0xAA)</span><br>
+      <span class="d-cmd">CMD_H CMD_L</span>
+      <span class="d-desc">命令字 (2字节, 如 0xF1 0x0A = SAVE_CMD)</span><br>
+      <span class="d-pl">PAYLOAD...</span>
+      <span class="d-desc">数据负载 (小端uint16, 可变长度)</span><br>
+      <span class="d-crc">CRC_L CRC_H</span>
+      <span class="d-desc">Modbus CRC16 (覆盖CMD+PAYLOAD)</span><br>
+      <span class="d-tail">55 55</span>
+      <span class="d-desc">帧尾 (2字节连续0x55)</span>
+    </div>
+
+    <h3>&#9888; 注意事项</h3>
+    <ul>
+      <li>修改参数后需点击<b>"保存到设备"</b>按钮，参数才会写入设备Flash持久化</li>
+      <li>出厂调校参数<b>直接影响设备精度</b>，修改前请记录原值</li>
+      <li>串口和WiFi不可同时使用，切换连接模式前请先断开当前连接</li>
+      <li>日志记录功能会占用ESP32内存，不使用时建议关闭</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ==================== 协议常量 ====================
+const FRAMEHEAD = 0xAA;
+const FRAMETAIL = 0x55;
+const CMD = {
+  SAVE:         0xF10A,
+  BACK:         0xF20B,
+  TEST:         0xF30C,
+  PAGESETTING:  0xF40D,
+  EX:           0xF60F,
+  SPRAY:        0xF710,
+  FACTORY_SAVE: 0xF811,
+  FACTORY_MODE: 0xF912,
+  LOG_START:    0xFA13,
+  LOG_STOP:     0xFB14,
+  AT_MT:        0xFC15,
+  V_AUTOSET:    0xFD16,
+  OUT_AUTOSET:  0xFE17,
+  DAC1_OUT:     0xFA50,
+  DAC2_OUT:     0xFAA1,
+};
+
+// ==================== 状态 ====================
+let connMode = 'serial';
+let connected = false;
+let serialPort = null;
+let serialReader = null;
+let socket = null;
+let rxBuf = [];
+let txCount = 0, rxCount = 0, errCount = 0;
+let logLines = [];
+let chartData = { maf: [], mv: [], pa: [], pb: [] };
+const CHART_MAX = 200;
+
+// ==================== Modbus CRC16 ====================
+function modbusCRC16(data) {
+  let crc = 0xFFFF;
+  for (let b of data) {
+    crc ^= b;
+    for (let i = 0; i < 8; i++) {
+      if (crc & 0x0001) { crc >>= 1; crc ^= 0xA001; }
+      else { crc >>= 1; }
+    }
+  }
+  return crc;
+}
+
+// ==================== 帧打包 ====================
+function buildFrame(cmd, payload = []) {
+  const cmdH = (cmd >> 8) & 0xFF;
+  const cmdL = cmd & 0xFF;
+  const frame = [cmdH, cmdL, ...payload];
+  const crc = modbusCRC16(frame);
+  const crcL = crc & 0xFF;
+  const crcH = (crc >> 8) & 0xFF;
+  return [FRAMEHEAD, FRAMEHEAD, ...frame, crcL, crcH, FRAMETAIL, FRAMETAIL];
+}
+
+function bytesToHex(arr) {
+  return arr.map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+}
+
+function formatFramePreview(arr) {
+  const s = bytesToHex(arr);
+  const parts = s.split(' ');
+  // AA AA | cmdH cmdL | payload... | crcL crcH | 55 55
+  let html = `<span class="head">${parts[0]} ${parts[1]}</span> `;
+  html += `<span class="cmd">${parts[2]} ${parts[3]}</span> `;
+  const payloadEnd = parts.length - 4;
+  if (payloadEnd > 4) {
+    html += `<span class="payload">${parts.slice(4, payloadEnd).join(' ')}</span> `;
+  }
+  html += `<span class="crc">${parts[parts.length-4]} ${parts[parts.length-3]}</span> `;
+  html += `<span class="tail">${parts[parts.length-2]} ${parts[parts.length-1]}</span>`;
+  return html;
+}
+
+// ==================== 连接管理 ====================
+function setConnMode(mode) {
+  connMode = mode;
+  document.getElementById('btnSerial').classList.toggle('active', mode === 'serial');
+  document.getElementById('btnWifi').classList.toggle('active', mode === 'wifi');
+  document.getElementById('serialSettings').style.display = mode === 'serial' ? '' : 'none';
+  document.getElementById('wifiSettings').style.display = mode === 'wifi' ? '' : 'none';
+}
+
+async function refreshPorts() {
+  if (!('serial' in navigator)) {
+    log('浏览器不支持 Web Serial API，请使用 Chrome/Edge', 'err');
+    return;
+  }
+  try {
+    const ports = await navigator.serial.getPorts();
+    const sel = document.getElementById('serialPort');
+    sel.innerHTML = '';
+    if (ports.length === 0) {
+      sel.innerHTML = '<option>无可用端口 (点击请求权限)</option>';
+    } else {
+      ports.forEach((p, i) => {
+        const opt = document.createElement('option');
+        opt.text = p.getInfo().usbVendorId ? `USB-Serial (${p.getInfo().usbVendorId})` : `COM${i+1}`;
+        opt.value = i;
+        sel.add(opt);
+      });
+    }
+  } catch(e) {
+    log('获取串口失败: ' + e.message, 'err');
+  }
+}
+
+async function connect() {
+  if (connected) { log('已连接，请先断开', 'info'); return; }
+  try {
+    if (connMode === 'serial') {
+      if (!('serial' in navigator)) {
+        log('浏览器不支持 Web Serial API', 'err'); return;
+      }
+      serialPort = await navigator.serial.requestPort({ filters: [] });
+      const baud = parseInt(document.getElementById('baudRate').value);
+      await serialPort.open({ baudRate: baud });
+      serialReader = serialPort.readable.getReader();
+      connected = true;
+      updateConnStatus(true);
+      log(`串口已连接 @ ${baud}bps`, 'info');
+      readSerialLoop();
+    } else {
+      const ip = document.getElementById('wifiIP').value;
+      const port = parseInt(document.getElementById('wifiPort').value);
+      socket = new WebSocket(`ws://${ip}:${port}`);
+      socket.binaryType = 'arraybuffer';
+      socket.onopen = () => {
+        connected = true;
+        updateConnStatus(true);
+        log(`WiFi已连接 ${ip}:${port}`, 'info');
+      };
+      socket.onmessage = (e) => {
+        const arr = new Uint8Array(e.data);
+        handleRx(Array.from(arr));
+      };
+      socket.onclose = () => { if (connected) disconnect(); };
+      socket.onerror = (e) => { log('WiFi连接错误', 'err'); disconnect(); };
+    }
+  } catch(e) {
+    log('连接失败: ' + e.message, 'err');
+  }
+}
+
+async function disconnect() {
+  connected = false;
+  if (serialReader) { try { await serialReader.cancel(); } catch(e){} serialReader = null; }
+  if (serialPort) { try { await serialPort.close(); } catch(e){} serialPort = null; }
+  if (socket) { try { socket.close(); } catch(e){} socket = null; }
+  updateConnStatus(false);
+  log('已断开连接', 'info');
+}
+
+function updateConnStatus(on) {
+  const dot = document.getElementById('connDot');
+  const txt = document.getElementById('connText');
+  dot.className = 'status-dot' + (on ? ' on' : '');
+  txt.textContent = on ? (connMode==='serial'?'串口已连接':'WiFi已连接') : '未连接';
+}
+
+async function readSerialLoop() {
+  while (connected && serialReader) {
+    try {
+      const { value, done } = await serialReader.read();
+      if (done) break;
+      if (value) handleRx(Array.from(value));
+    } catch(e) { break; }
+  }
+}
+
+// ==================== 数据接收处理 ====================
+let rxFrame = { recvFlag: false, lastByte: 0, offset: 0, buf: new Array(100) };
+
+function handleRx(bytes) {
+  for (let b of bytes) {
+    // 帧头检测 AA AA
+    if (b === FRAMEHEAD && rxFrame.lastByte === FRAMEHEAD) {
+      rxFrame.recvFlag = true;
+      rxFrame.offset = 0;
+      rxFrame.lastByte = b;
+      continue;
+    }
+    if (!rxFrame.recvFlag) { rxFrame.lastByte = b; continue; }
+
+    // 帧尾检测 55 55
+    if (b === FRAMETAIL && rxFrame.lastByte === FRAMETAIL) {
+      rxFrame.recvFlag = false;
+      if (rxFrame.offset < 3) { errCount++; updateStats(); continue; }
+      const payloadLen = rxFrame.offset - 3;
+      const crcCalc = modbusCRC16(rxFrame.buf.slice(0, payloadLen));
+      const crcRecv = (rxFrame.buf[rxFrame.offset-2] << 8) | rxFrame.buf[rxFrame.offset-3];
+      if (crcCalc === crcRecv) {
+        rxCount++;
+        const cmd = (rxFrame.buf[0] << 8) | rxFrame.buf[1];
+        const payload = rxFrame.buf.slice(2, payloadLen);
+        onFrameReceived(cmd, payload);
+        const full = [FRAMEHEAD, FRAMEHEAD, ...rxFrame.buf.slice(0, rxFrame.offset), FRAMETAIL, FRAMETAIL];
+        log(`RX  ${bytesToHex(full)}`, 'rx');
+      } else {
+        errCount++;
+        log('RX CRC错误', 'err');
+      }
+      updateStats();
+      rxFrame.lastByte = b;
+      continue;
+    }
+
+    rxFrame.buf[rxFrame.offset++] = b;
+    if (rxFrame.offset >= 100) { rxFrame.recvFlag = false; errCount++; updateStats(); }
+    rxFrame.lastByte = b;
+  }
+}
+
+function onFrameReceived(cmd, payload) {
+  // 根据命令字解析响应... (简化示例)
+  if (cmd === CMD.SAVE) {
+    log('收到参数保存确认', 'info');
+  }
+}
+
+// ==================== 发送 ====================
+async function sendFrame(cmd, payload = []) {
+  if (!connected) { log('未连接，无法发送', 'err'); return; }
+  const frame = buildFrame(cmd, payload);
+  log(`TX  ${bytesToHex(frame)}`, 'tx');
+  txCount++;
+  updateStats();
+
+  if (connMode === 'serial' && serialPort) {
+    const writer = serialPort.writable.getWriter();
+    await writer.write(new Uint8Array(frame));
+    writer.releaseLock();
+  } else if (socket && socket.readyState === 1) {
+    socket.send(new Uint8Array(frame));
+  }
+}
+
+function u16le(v) { return [v & 0xFF, (v >> 8) & 0xFF]; }
+
+// ==================== 各面板命令发送 ====================
+function savePump() {
+  const p1e = document.getElementById('p1_en').checked ? 1 : 0;
+  const p1s = parseInt(document.getElementById('p1_start').value) || 0;
+  const p1f = parseInt(document.getElementById('p1_full').value) || 0;
+  const p2e = document.getElementById('p2_en').checked ? 1 : 0;
+  const p2s = parseInt(document.getElementById('p2_start').value) || 0;
+  const p2f = parseInt(document.getElementById('p2_full').value) || 0;
+  const pl = [
+    ...u16le(p1e), ...u16le(p1s), ...u16le(p1f),
+    ...u16le(p2e), ...u16le(p2s), ...u16le(p2f),
+    // ... 需要补全 SAVE_CMD 的完整 payload 结构
+  ];
+  // 简化: 实际应根据 display_comm.h 的 Parse_Save 完整构造
+  sendFrame(CMD.SAVE, pl);
+  log('发送泵参数保存命令', 'info');
+}
+function readPump() { log('读取泵参数 (待实现)', 'info'); }
+function saveCommon() { log('发送公共参数 (待实现)', 'info'); }
+function readCommon() { log('读取公共参数 (待实现)', 'info'); }
+
+function saveExhaust() {
+  const exa = parseInt(document.getElementById('ex_auto').value);
+  const exs = parseInt(document.getElementById('ex_set').value) || 0;
+  const exd = parseInt(document.getElementById('ex_delay').value) || 0;
+  const pl = [...u16le(exa), ...u16le(exs), ...u16le(exd)];
+  sendFrame(CMD.SAVE, pl);
+  log('发送排气参数保存命令', 'info');
+}
+function readExhaust() { log('读取排气参数 (待实现)', 'info'); }
+function sendExCmd() {
+  const on = document.getElementById('ex_val_sw').checked ? 1 : 0;
+  const frame = buildFrame(CMD.EX, [on]);
+  document.getElementById('exHexPreview').innerHTML = '帧预览: ' + formatFramePreview(frame);
+  sendFrame(CMD.EX, [on]);
+}
+function setExValve() { sendExCmd(); }
+
+function saveSpray() {
+  const sm = document.getElementById('spray_main').checked ? 1 : 0;
+  const on = parseInt(document.getElementById('rain_ontime').value) || 0;
+  const off = parseInt(document.getElementById('rain_offtime').value) || 0;
+  const pl = [...u16le(sm), ...u16le(on), ...u16le(off)];
+  sendFrame(CMD.SAVE, pl);
+  log('发送喷雾参数保存命令', 'info');
+}
+function readSpray() { log('读取喷雾参数 (待实现)', 'info'); }
+
+function saveCalib() {
+  const f0 = parseInt(document.getElementById('flex0').value) || 0;
+  const f100 = parseInt(document.getElementById('flex100').value) || 0;
+  const hm = parseInt(document.getElementById('hz_mv').value);
+  const tu = parseInt(document.getElementById('temp_uint').value);
+  const pl = [...u16le(f0), ...u16le(f100), ...u16le(hm), ...u16le(tu)];
+  sendFrame(CMD.SAVE, pl);
+  log('发送MAF标定保存命令', 'info');
+}
+function readCalib() { log('读取MAF标定 (待实现)', 'info'); }
+function autoCalMafV() { sendFrame(CMD.V_AUTOSET, []); log('发送MAF电压自动校准', 'info'); }
+function autoCalDac() { sendFrame(CMD.OUT_AUTOSET, []); log('发送DAC自动校准', 'info'); }
+
+function saveFactory() {
+  const l1 = parseInt(document.getElementById('level1').value) || 0;
+  const l2 = parseInt(document.getElementById('level2').value) || 0;
+  const l3 = parseInt(document.getElementById('level3').value) || 0;
+  const eth = parseInt(document.getElementById('eth_adj').value) || 0;
+  const afr = parseInt(document.getElementById('afr_adj').value) || 0;
+  const d1 = parseInt(document.getElementById('dac1_adj').value) || 0;
+  const d2 = parseInt(document.getElementById('dac2_adj').value) || 0;
+  const pl = [...u16le(l1), ...u16le(l2), ...u16le(l3), ...u16le(eth), ...u16le(afr), ...u16le(d1), ...u16le(d2)];
+  sendFrame(CMD.FACTORY_SAVE, pl);
+  log('发送出厂参数保存命令', 'info');
+}
+function readFactory() { log('读取出厂参数 (待实现)', 'info'); }
+
+function sendDac1() {
+  const v = parseInt(document.getElementById('dac1_out').value) || 0;
+  const frame = buildFrame(CMD.DAC1_OUT, u16le(v));
+  document.getElementById('dacHexPreview').innerHTML = '帧预览: ' + formatFramePreview(frame);
+  sendFrame(CMD.DAC1_OUT, u16le(v));
+}
+function sendDac2() {
+  const v = parseInt(document.getElementById('dac2_out').value) || 0;
+  sendFrame(CMD.DAC2_OUT, u16le(v));
+}
+function enterTest() {
+  const v = parseInt(document.getElementById('test_set').value) || 0;
+  sendFrame(CMD.TEST, [...u16le(v), 1]);
+  document.getElementById('test_state').value = '测试中 (模拟MAF=' + v + ')';
+  log('进入测试模式', 'info');
+}
+function exitTest() {
+  sendFrame(CMD.TEST, [0, 0, 0]);
+  document.getElementById('test_state').value = '未进入';
+  log('退出测试模式', 'info');
+}
+
+function toggleLog() {
+  const on = document.getElementById('swLog').checked;
+  sendFrame(on ? CMD.LOG_START : CMD.LOG_STOP, []);
+  log(on ? '启动日志记录' : '停止日志记录', 'info');
+}
+function toggleTest() {
+  const on = document.getElementById('swTest').checked;
+  if (on) enterTest(); else exitTest();
+}
+function toggleExAuto() {
+  const on = document.getElementById('swExAuto').checked;
+  sendFrame(CMD.AT_MT, [on ? 1 : 0]);
+  log('排气模式: ' + (on ? '自动(AT)' : '手动(MT)'), 'info');
+}
+function toggleSpray() {
+  const on = document.getElementById('swSpray').checked;
+  sendFrame(CMD.SPRAY, [on ? 1 : 0]);
+  log('喷淋: ' + (on ? '开启' : '关闭'), 'info');
+}
+
+// ==================== 日志 ====================
+function log(msg, type = 'info') {
+  const box = document.getElementById('logBox');
+  const time = new Date().toLocaleTimeString('zh-CN', {hour12:false});
+  const cls = { tx: 'log-tx', rx: 'log-rx', err: 'log-err', info: 'log-info' };
+  const line = document.createElement('div');
+  line.className = cls[type] || 'log-info';
+  line.textContent = `[${time}] ${msg}`;
+  box.appendChild(line);
+  logLines.push(`[${time}] ${msg}`);
+  if (document.getElementById('autoScroll').checked) {
+    box.scrollTop = box.scrollHeight;
+  }
+}
+function startLog() { toggleLog(); document.getElementById('swLog').checked = true; }
+function stopLog() { document.getElementById('swLog').checked = false; toggleLog(); }
+function clearLog() { document.getElementById('logBox').innerHTML = ''; logLines = []; }
+function exportLog() {
+  const blob = new Blob([logLines.join('\n')], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `acu_log_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ==================== 统计 ====================
+function updateStats() {
+  document.getElementById('statTx').textContent = txCount;
+  document.getElementById('statRx').textContent = rxCount;
+  document.getElementById('statErr').textContent = errCount;
+}
+
+// ==================== 标签页 ====================
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ==================== 帮助 ====================
+function toggleHelp() {
+  document.getElementById('helpOverlay').classList.toggle('show');
+}
+
+// ==================== 图表 ====================
+function initChart() {
+  const canvas = document.getElementById('chartMaf');
+  const ctx = canvas.getContext('2d');
+  function resize() {
+    const wrap = canvas.parentElement;
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  for (let i = 0; i < CHART_MAX; i++) {
+    chartData.maf.push(0);
+    chartData.mv.push(0);
+    chartData.pa.push(0);
+    chartData.pb.push(0);
+  }
+
+  function draw() {
+    const w = canvas.width, h = canvas.height;
+    ctx.fillStyle = '#0d0d1a';
+    ctx.fillRect(0, 0, w, h);
+
+    // grid
+    ctx.strokeStyle = '#1a1a3a';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 5; i++) {
+      const y = (h / 5) * i;
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    for (let i = 1; i < 10; i++) {
+      const x = (w / 10) * i;
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+
+    function drawLine(data, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = (i / (CHART_MAX - 1)) * w;
+        const y = h - (data[i] / 1000) * h;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    drawLine(chartData.maf, '#e94560');
+    drawLine(chartData.mv, '#3498db');
+    drawLine(chartData.pa, '#2ecc71');
+    drawLine(chartData.pb, '#f39c12');
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // 模拟数据
+  setInterval(() => {
+    chartData.maf.shift(); chartData.maf.push(Math.random() * 800 + 100);
+    chartData.mv.shift(); chartData.mv.push(Math.random() * 3000 + 500);
+    chartData.pa.shift(); chartData.pa.push(Math.random() * 100);
+    chartData.pb.shift(); chartData.pb.push(Math.random() * 100);
+    document.getElementById('dispMaf').textContent = Math.round(chartData.maf[CHART_MAX-1]);
+    document.getElementById('mafBar').style.width = Math.min(100, chartData.maf[CHART_MAX-1]/10) + '%';
+    document.getElementById('valMaf').textContent = Math.round(chartData.maf[CHART_MAX-1]);
+  }, 200);
+}
+
+// ==================== 初始化 ====================
+window.onload = () => {
+  initChart();
+  refreshPorts();
+  log('除螨仪调试工具已启动', 'info');
+  log('点击右下角 [?] 查看完整界面说明', 'info');
+};
+</script>
+</body>
+</html>
