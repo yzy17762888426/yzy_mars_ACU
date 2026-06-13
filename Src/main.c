@@ -53,6 +53,7 @@ int main(void)
     MX_GPIO_Init();
     MX_ADC1_Init();
     MX_TIM2_Init();
+    MX_TIM5_Init();
     MX_USART2_UART_Init();
     MX_USART3_UART_Init();
     MX_DAC_Init();
@@ -75,8 +76,9 @@ int main(void)
             if (tick % 100 == 15)
             {
                 GetFreqHz_Task();
-								Log_Task();
-								Flex_DAC_Out();
+                Log_Task();
+                Flex_Sensor_Process();
+                Flex_DAC_Out();
             }
             else if (tick % 100 == 40)
             {
@@ -158,7 +160,7 @@ static void MX_GPIO_Init(void)
 
     GPIO_InitStruct.Pin = GPIO_PIN_5;
     GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
     GPIO_InitStruct.Pin = GPIO_PIN_1;

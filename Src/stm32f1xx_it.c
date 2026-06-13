@@ -200,10 +200,9 @@ void SysTick_Handler(void)
 	if(time++ > 50)
 	{
 		time = 0;
-		freq_hz = exit_cnt*9677/1000;
+		freq_hz = exit_cnt*9650/1000;
 		exit_cnt = 0;
 	}
-	PA1_Sample();
 }
 
 /******************************************************************************/
@@ -248,14 +247,17 @@ void USART2_IRQHandler(void)
 }
 
 extern DMA_HandleTypeDef hdma_uart1;
+extern TIM_HandleTypeDef htim5;
 
 void DMA1_Channel6_IRQHandler(void)
 {
     // HAL_DMA_IRQHandler(&hdma_uart1);
 }
 
-
-
+void TIM5_IRQHandler(void)
+{
+    HAL_TIM_IRQHandler(&htim5);
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -230,10 +230,10 @@ void Comm_unpack(void)
         case OUT_AUTOSET_CMD:
             break;
         case DAC1_OUT_CMD:
-            Set_DAC1(buf_u16_le(comm_buffer, 2));
+            Set_DAC1( (buf_u16_le(comm_buffer, 2) * 4095 * 66 / 330000) );
             break;
         case DAC2_OUT_CMD:
-            Set_DAC2(buf_u16_le(comm_buffer, 2));
+            Set_DAC2( (buf_u16_le(comm_buffer, 2) * 4095 * 66 / 330000) );
             break;
         case SPRAY_CMD:
             DataPacket_Type.SPRAYMAIN = comm_buffer[2] ? 1 : 0;
